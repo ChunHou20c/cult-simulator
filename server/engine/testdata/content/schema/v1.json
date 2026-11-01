@@ -1,0 +1,154 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cult-simulator/schema/v1.json",
+  "title": "Cult pack manifest, schema 1.x",
+  "type": "object",
+  "required": ["schema", "id", "version", "difficulty", "goal", "actions"],
+  "additionalProperties": false,
+  "definitions": {
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]{1,39}$" },
+    "key": { "type": "string", "pattern": "^[a-z][a-z0-9_.]{1,79}$" },
+    "expr": { "type": "string", "minLength": 1, "maxLength": 400 },
+    "value": { "oneOf": [{ "type": "number" }, { "$ref": "#/definitions/expr" }] },
+    "effect": {
+      "type": "object",
+      "required": ["stat"],
+      "additionalProperties": false,
+      "properties": {
+        "stat": { "$ref": "#/definitions/id" },
+        "add": { "$ref": "#/definitions/value" },
+        "mul": { "$ref": "#/definitions/value" },
+        "set": { "$ref": "#/definitions/value" },
+        "scale": { "enum": ["yield"] }
+      },
+      "oneOf": [
+        { "required": ["add"] },
+        { "required": ["mul"] },
+        { "required": ["set"] }
+      ]
+    },
+    "buff": {
+      "type": "object",
+      "required": ["id", "target", "mul", "durationMin"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/definitions/id" },
+        "target": { "$ref": "#/definitions/id" },
+        "mul": { "type": "number", "exclusiveMinimum": 0, "maximum": 3 },
+        "durationMin": { "type": "number", "exclusiveMinimum": 0, "maximum": 240 }
+      }
+    },
+    "action": {
+      "type": "object",
+      "required": ["id", "effects"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/definitions/id" },
+        "energy": { "type": "integer", "minimum": 1, "maximum": 4 },
+        "cooldownSec": { "type": "integer", "minimum": 0, "maximum": 3600 },
+        "requires": { "$ref": "#/definitions/expr" },
+        "effects": { "type": "array", "items": { "$ref": "#/definitions/effect" } },
+        "buff": { "$ref": "#/definitions/buff" },
+        "phases": { "type": "array", "items": { "$ref": "#/definitions/id" } }
+      }
+    },
+    "fall": {
+      "type": "object",
+      "required": ["when", "reason", "text"],
+      "additionalProperties": false,
+      "properties": {
+        "when": { "$ref": "#/definitions/expr" },
+        "reason": { "$ref": "#/definitions/id" },
+        "text": { "$ref": "#/definitions/key" },
+        "historical": { "type": "boolean" }
+      }
+    },
+    "goal": {
+      "type": "object",
+      "required": ["progress", "label"],
+      "additionalProperties": false,
+      "properties": {
+        "progress": { "$ref": "#/definitions/expr" },
+        "label": { "$ref": "#/definitions/key" }
+      }
+    }
+  },
+  "properties": {
+    "schema": { "type": "string", "pattern": "^1\\.[0-9]+$" },
+    "id": { "$ref": "#/definitions/id" },
+    "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "difficulty": { "enum": ["tutorial", "easy", "medium", "hard"] },
+    "names": { "enum": ["real", "fictional"] },
+    "theme": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "primary": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+        "accent": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+        "floor": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" }
+      }
+    },
+    "stats": {
+      "type": "object",
+      "propertyNames": { "$ref": "#/definitions/id" },
+      "additionalProperties": {
+        "type": "object",
+        "required": ["widget", "label"],
+        "additionalProperties": false,
+        "properties": {
+          "min": { "type": "number" },
+          "max": { "type": "number" },
+          "initial": { "type": "number" },
+          "widget": { "enum": ["bar", "counter", "currency", "months"] },
+          "label": { "$ref": "#/definitions/key" }
+        }
+      }
+    },
+    "initial": {
+      "type": "object",
+      "propertyNames": { "enum": ["followers", "funds", "loyalty", "scrutiny", "paranoia"] },
+      "additionalProperties": { "type": "number" }
+    },
+    "goal": { "$ref": "#/definitions/goal" },
+    "guard": { "$ref": "#/definitions/expr" },
+    "sharedActions": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "enum": ["recruit", "fundraise", "ritual", "lie_low", "open_doors"] }
+    },
+    "actions": { "type": "array", "maxItems": 6, "items": { "$ref": "#/definitions/action" } },
+    "tick": { "type": "array", "items": { "$ref": "#/definitions/effect" } },
+    "falls": { "type": "array", "items": { "$ref": "#/definitions/fall" } },
+    "phases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "goal"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "$ref": "#/definitions/id" },
+          "goal": { "$ref": "#/definitions/goal" },
+          "guard": { "$ref": "#/definitions/expr" },
+          "next": { "$ref": "#/definitions/id" }
+        }
+      }
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "after", "delayMin", "check", "pass", "fail"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "$ref": "#/definitions/id" },
+          "after": { "$ref": "#/definitions/expr" },
+          "delayMin": { "type": "number", "minimum": 0 },
+          "check": { "$ref": "#/definitions/expr" },
+          "pass": { "type": "array", "items": { "$ref": "#/definitions/effect" } },
+          "fail": { "type": "array", "items": { "$ref": "#/definitions/effect" } },
+          "text": { "$ref": "#/definitions/key" }
+        }
+      }
+    }
+  }
+}

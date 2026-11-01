@@ -1,0 +1,15 @@
+{
+  "name": "Synanon",
+  "tagline": "A drug rehabilitation program that became a church, and then something harder.",
+  "leader": "Charles \"Chuck\" Dederich",
+  "era": "Santa Monica and Marin County, California, 1958 to 1991",
+  "summary": "Build Synanon's holdings to $30M in assets while keeping legal scrutiny below 70.",
+  "stat.assets": "Assets",
+  "goal.assets": "$30M in assets",
+  "action.open_rehab_house": "Open a rehab house",
+  "action.open_rehab_house.desc": "Costs $8,000. Adds assets and residents, and draws attention.",
+  "action.play_the_game": "Play The Game",
+  "action.play_the_game.desc": "The group's confrontational talk circle. Raises loyalty, and paranoia with it.",
+  "codex.fall.prosecuted": "In 1991 the IRS revoked Synanon's tax exemption and demanded back taxes. The organization dissolved that year.",
+  "codex.fall.violence": "In October 1978 two Synanon members put a rattlesnake in the mailbox of Paul Morantz, a Los Angeles lawyer who had won a case against the group. He was bitten and survived. Founder Charles Dederich and the two members pleaded no contest in 1980."
+}

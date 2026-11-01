@@ -1,0 +1,44 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  server-and-content:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
+      - run: go vet ./...
+      - name: Unit tests and the cult-id lint
+        run: go test ./...
+      - name: Pack checks (schema, semantic lint, care lint)
+        run: go run ./cmd/packcheck -content ../content
+      - name: Bot balance run (50 Days per pack)
+        run: go run ./cmd/sim -content ../content -days 50 -race 10
+
+  plugin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the Nakama image with the plugin
+        run: docker build -f deploy/Dockerfile -t cult-simulator-nakama .
+
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint:cult-ids
+      - run: npm run build

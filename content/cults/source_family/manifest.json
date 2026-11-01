@@ -1,0 +1,93 @@
+{
+  "schema": "1.0",
+  "id": "source_family",
+  "version": "1.0.0",
+  "difficulty": "tutorial",
+  "names": "real",
+  "theme": {
+    "primary": "#c8743a",
+    "accent": "#f2d27a",
+    "floor": "#3b2a1e"
+  },
+  "stats": {
+    "profit": {
+      "min": 0,
+      "initial": 0,
+      "widget": "currency",
+      "label": "stat.profit"
+    }
+  },
+  "initial": {
+    "followers": 12,
+    "funds": 4000,
+    "loyalty": 70
+  },
+  "goal": {
+    "progress": "min(cult.followers / 140, cult.profit / 50000)",
+    "label": "goal.members_profit"
+  },
+  "guard": "cult.loyalty >= 60",
+  "actions": [
+    {
+      "id": "run_restaurant",
+      "energy": 2,
+      "cooldownSec": 60,
+      "effects": [
+        {
+          "stat": "funds",
+          "add": 300,
+          "scale": "yield"
+        },
+        {
+          "stat": "profit",
+          "add": 250,
+          "scale": "yield"
+        },
+        {
+          "stat": "scrutiny",
+          "add": 0.3
+        }
+      ]
+    },
+    {
+      "id": "record_album",
+      "energy": 2,
+      "cooldownSec": 600,
+      "effects": [
+        {
+          "stat": "loyalty",
+          "add": 2
+        },
+        {
+          "stat": "scrutiny",
+          "add": 2
+        }
+      ],
+      "buff": {
+        "id": "album_buzz",
+        "target": "recruit",
+        "mul": 1.5,
+        "durationMin": 30
+      }
+    }
+  ],
+  "tick": [
+    {
+      "stat": "funds",
+      "add": "-cult.followers * 0.5"
+    }
+  ],
+  "falls": [
+    {
+      "when": "cult.loyalty <= 0",
+      "reason": "scattered",
+      "text": "codex.fall.scattered",
+      "historical": true
+    },
+    {
+      "when": "cult.scrutiny >= 100",
+      "reason": "raided",
+      "text": "codex.fall.raided"
+    }
+  ]
+}

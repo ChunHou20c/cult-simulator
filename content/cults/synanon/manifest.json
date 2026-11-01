@@ -1,0 +1,92 @@
+{
+  "schema": "1.0",
+  "id": "synanon",
+  "version": "1.0.0",
+  "difficulty": "easy",
+  "names": "real",
+  "theme": {
+    "primary": "#2f5d50",
+    "accent": "#e0b44c",
+    "floor": "#1d2b27"
+  },
+  "stats": {
+    "assets": {
+      "min": 0,
+      "initial": 0,
+      "widget": "currency",
+      "label": "stat.assets"
+    }
+  },
+  "initial": {
+    "followers": 30,
+    "funds": 30000,
+    "loyalty": 60
+  },
+  "goal": {
+    "progress": "cult.assets / 30000000",
+    "label": "goal.assets"
+  },
+  "guard": "cult.scrutiny < 70",
+  "actions": [
+    {
+      "id": "open_rehab_house",
+      "energy": 2,
+      "cooldownSec": 60,
+      "requires": "cult.funds >= 8000",
+      "effects": [
+        {
+          "stat": "funds",
+          "add": -8000
+        },
+        {
+          "stat": "assets",
+          "add": 300000,
+          "scale": "yield"
+        },
+        {
+          "stat": "followers",
+          "add": 5
+        },
+        {
+          "stat": "scrutiny",
+          "add": 1.2
+        }
+      ]
+    },
+    {
+      "id": "play_the_game",
+      "energy": 2,
+      "cooldownSec": 60,
+      "effects": [
+        {
+          "stat": "loyalty",
+          "add": 5
+        },
+        {
+          "stat": "paranoia",
+          "add": 2
+        }
+      ]
+    }
+  ],
+  "tick": [
+    {
+      "stat": "funds",
+      "add": "cult.followers * 1.2"
+    }
+  ],
+  "falls": [
+    {
+      "when": "cult.scrutiny >= 100",
+      "reason": "prosecuted",
+      "text": "codex.fall.prosecuted",
+      "historical": true
+    },
+    {
+      "when": "cult.paranoia >= 100",
+      "reason": "violence",
+      "text": "codex.fall.violence",
+      "historical": true
+    }
+  ]
+}

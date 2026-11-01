@@ -1,0 +1,11 @@
+{
+  "name": "cult-simulator",
+  "private": true,
+  "workspaces": ["apps/web"],
+  "scripts": {
+    "dev": "npm run dev -w apps/web",
+    "build": "npm run build -w apps/web",
+    "lint:cult-ids": "node scripts/lint-cult-ids.mjs",
+    "e2e": "node scripts/e2e.mjs"
+  }
+}

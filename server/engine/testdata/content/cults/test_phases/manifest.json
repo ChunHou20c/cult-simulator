@@ -1,0 +1,23 @@
+{
+  "schema": "1.0",
+  "id": "test_phases",
+  "version": "0.0.1",
+  "difficulty": "hard",
+  "stats": {
+    "influence": { "min": 0, "max": 100, "widget": "bar", "label": "stat.influence" },
+    "visit": { "min": 0, "max": 1, "widget": "counter", "label": "stat.visit" }
+  },
+  "goal": { "progress": "cult.influence / 100", "label": "goal.x" },
+  "actions": [
+    { "id": "lobby", "effects": [{ "stat": "influence", "add": 50 }], "phases": ["build"] },
+    { "id": "prepare", "effects": [{ "stat": "loyalty", "add": 1 }], "phases": ["visit"] }
+  ],
+  "phases": [
+    { "id": "build", "goal": { "progress": "cult.influence / 100", "label": "goal.x" }, "next": "visit" },
+    { "id": "visit", "goal": { "progress": "cult.visit", "label": "goal.x" } }
+  ],
+  "events": [
+    { "id": "the_visit", "after": "phase == 'visit'", "delayMin": 2, "check": "cult.loyalty >= 50",
+      "pass": [{ "stat": "visit", "set": 1 }], "fail": [{ "stat": "paranoia", "set": 100 }], "text": "event.visit" }
+  ]
+}

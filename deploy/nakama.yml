@@ -1,0 +1,23 @@
+# Nakama config. Secrets come from the environment (see .env.example), never this file.
+name: cult-simulator
+logger:
+  level: INFO
+session:
+  token_expiry_sec: 604800
+  refresh_token_expiry_sec: 2592000
+socket:
+  # Cloudflare drops idle WebSockets after ~100 s; clients heartbeat every 30 s.
+  ping_period_ms: 25000
+  pong_wait_ms: 40000
+  max_message_size_bytes: 8192
+runtime:
+  path: /nakama/data/modules
+  env:
+    - "CONTENT_DIR=/nakama/data/content"
+    - "RESET_HOUR_UTC=0"
+match:
+  input_queue_size: 1024
+  call_queue_size: 1024
+  signal_queue_size: 1024
+console:
+  port: 7351

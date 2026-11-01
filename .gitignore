@@ -1,0 +1,7 @@
+deploy/.env
+deploy/build/
+node_modules/
+dist/
+*.so
+apps/web/public/packs/
+.DS_Store

@@ -1,0 +1,95 @@
+{
+  "schema": "1.0",
+  "id": "rajneeshpuram",
+  "version": "1.0.0",
+  "difficulty": "medium",
+  "names": "real",
+  "theme": {
+    "primary": "#b8325a",
+    "accent": "#f0a04b",
+    "floor": "#3a2430"
+  },
+  "stats": {
+    "months": {
+      "min": 0,
+      "max": 60,
+      "initial": 0,
+      "widget": "months",
+      "label": "stat.months"
+    }
+  },
+  "initial": {
+    "followers": 40,
+    "funds": 60000,
+    "loyalty": 65
+  },
+  "goal": {
+    "progress": "cult.months / 60",
+    "label": "goal.months"
+  },
+  "guard": "cult.funds > cult.followers * 20",
+  "actions": [
+    {
+      "id": "build_on_ranch",
+      "energy": 2,
+      "cooldownSec": 60,
+      "requires": "cult.funds >= 15000",
+      "effects": [
+        {
+          "stat": "funds",
+          "add": -15000
+        },
+        {
+          "stat": "months",
+          "add": 0.35,
+          "scale": "yield"
+        },
+        {
+          "stat": "paranoia",
+          "add": 0.8
+        }
+      ]
+    },
+    {
+      "id": "host_festival",
+      "energy": 2,
+      "cooldownSec": 300,
+      "effects": [
+        {
+          "stat": "funds",
+          "add": 40000,
+          "scale": "yield"
+        },
+        {
+          "stat": "followers",
+          "add": 25,
+          "scale": "yield"
+        },
+        {
+          "stat": "scrutiny",
+          "add": 3
+        }
+      ]
+    }
+  ],
+  "tick": [
+    {
+      "stat": "funds",
+      "add": "-cult.followers * 1"
+    }
+  ],
+  "falls": [
+    {
+      "when": "cult.scrutiny >= 100",
+      "reason": "federal_case",
+      "text": "codex.fall.federal_case",
+      "historical": true
+    },
+    {
+      "when": "cult.paranoia >= 100",
+      "reason": "the_dalles",
+      "text": "codex.fall.the_dalles",
+      "historical": true
+    }
+  ]
+}

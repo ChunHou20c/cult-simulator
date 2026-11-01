@@ -1,0 +1,62 @@
+# Nakama + Postgres on your own machine. Only 7350 is published, and only
+# on localhost: cloudflared exposes it. The console (7351) is never published.
+#   cp deploy/.env.example deploy/.env   # then edit the secrets
+#   docker compose -f deploy/docker-compose.yml up -d --build
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: nakama
+      POSTGRES_USER: nakama
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in deploy/.env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nakama -d nakama"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  nakama:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: cult-simulator-nakama
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    entrypoint:
+      - /bin/sh
+      - -ecx
+      - >
+        /nakama/nakama migrate up --database.address "nakama:${POSTGRES_PASSWORD}@postgres:5432/nakama" &&
+        exec /nakama/nakama --config /nakama/data/nakama.yml
+        --database.address "nakama:${POSTGRES_PASSWORD}@postgres:5432/nakama"
+        --socket.server_key "${NAKAMA_SERVER_KEY}"
+        --session.encryption_key "${NAKAMA_SESSION_KEY}"
+        --session.refresh_encryption_key "${NAKAMA_REFRESH_KEY}"
+        --runtime.http_key "${NAKAMA_HTTP_KEY}"
+        --console.username admin --console.password "${NAKAMA_CONSOLE_PASSWORD}"
+        --runtime.env "ASSET_BASE=${ASSET_BASE}"
+        --runtime.env "DAY_SECONDS=${DAY_SECONDS:-86400}"
+    volumes:
+      - ../content:/nakama/data/content:ro
+    ports:
+      - "127.0.0.1:7350:7350"
+    healthcheck:
+      test: ["CMD", "/nakama/nakama", "healthcheck"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  cloudflared:
+    image: cloudflare/cloudflared:2025.10.1
+    restart: unless-stopped
+    profiles: ["tunnel"]
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on: [nakama]
+
+volumes:
+  pgdata:

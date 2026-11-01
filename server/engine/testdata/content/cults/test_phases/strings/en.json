@@ -1,0 +1,2 @@
+{ "name": "Test", "tagline": "t", "leader": "t", "era": "t", "summary": "t", "stat.influence": "Influence", "stat.visit": "Visit",
+  "goal.x": "x", "action.lobby": "Lobby", "action.lobby.desc": "d", "action.prepare": "Prepare", "action.prepare.desc": "d", "event.visit": "The visit" }
