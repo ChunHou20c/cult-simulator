@@ -13,11 +13,16 @@ export const OP = {
   ACT_RESULT: 30, WORLD: 31, EVENT: 32, DAY_ENDED: 33, CORRECTION: 40,
 } as const;
 
+// Runtime config (public/config.js, rewritten by the web container at start)
+// wins over build-time VITE_* values, so one image works for any server.
+type RuntimeConfig = { nakamaHost?: string; nakamaPort?: string; nakamaSsl?: string; nakamaKey?: string };
+const rt: RuntimeConfig = (globalThis as { __CS_CONFIG__?: RuntimeConfig }).__CS_CONFIG__ ?? {};
 const env = import.meta.env;
-const secure = env.VITE_NAKAMA_SSL ? env.VITE_NAKAMA_SSL === "true" : location.protocol === "https:";
-const host = env.VITE_NAKAMA_HOST || location.hostname;
-const port = env.VITE_NAKAMA_PORT || (secure ? "443" : "7350");
-const serverKey = env.VITE_NAKAMA_KEY || "defaultkey";
+const ssl = rt.nakamaSsl || env.VITE_NAKAMA_SSL;
+const secure = ssl ? ssl === "true" : location.protocol === "https:";
+const host = rt.nakamaHost || env.VITE_NAKAMA_HOST || location.hostname;
+const port = rt.nakamaPort || env.VITE_NAKAMA_PORT || (secure ? "443" : "7350");
+const serverKey = rt.nakamaKey || env.VITE_NAKAMA_KEY || "defaultkey";
 
 export const client = new Client(serverKey, host, port, secure);
 

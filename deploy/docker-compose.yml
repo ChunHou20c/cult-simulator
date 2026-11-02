@@ -2,6 +2,8 @@
 # on localhost: cloudflared exposes it. The console (7351) is never published.
 #   cp deploy/.env.example deploy/.env   # then edit the secrets
 #   docker compose -f deploy/docker-compose.yml up -d --build
+# Or skip the local build and run the images CI publishes to GHCR:
+#   docker compose -f deploy/docker-compose.yml pull && docker compose -f deploy/docker-compose.yml up -d
 services:
   postgres:
     image: postgres:16-alpine
@@ -22,7 +24,7 @@ services:
     build:
       context: ..
       dockerfile: deploy/Dockerfile
-    image: cult-simulator-nakama
+    image: ghcr.io/chunhou20c/cult-simulator-nakama:${IMAGE_TAG:-latest}
     restart: unless-stopped
     depends_on:
       postgres:
@@ -50,6 +52,23 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # The PWA, for serving it yourself instead of Cloudflare Pages.
+  # Route the web hostname to http://web:8080 in the tunnel.
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/web.Dockerfile
+    image: ghcr.io/chunhou20c/cult-simulator-web:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    profiles: ["web"]
+    environment:
+      NAKAMA_HOST: ${WEB_NAKAMA_HOST:-}
+      NAKAMA_PORT: ${WEB_NAKAMA_PORT:-}
+      NAKAMA_SSL: ${WEB_NAKAMA_SSL:-}
+      NAKAMA_SERVER_KEY: ${NAKAMA_SERVER_KEY}
+    ports:
+      - "127.0.0.1:8080:8080"
 
   cloudflared:
     image: cloudflare/cloudflared:2025.10.1

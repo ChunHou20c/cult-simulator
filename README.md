@@ -58,7 +58,12 @@ go run ./cmd/packcheck -content ../content     # schema, semantic and care lint 
 go run ./cmd/sim -content ../content -days 50  # balance: median finish 14-22 h, fall rate <= 60%
 ```
 
-CI (`.github/workflows/ci.yml`) runs all of these, builds the Nakama image, and builds the web app.
+CI (`.github/workflows/ci.yml`) runs all of these and builds the web app. `.github/workflows/publish.yml` builds both container images on every pull request and pushes them to GHCR on `main` and `v*` tags:
+
+- `ghcr.io/chunhou20c/cult-simulator-nakama` (Nakama + the Go plugin)
+- `ghcr.io/chunhou20c/cult-simulator-web` (the PWA on nginx, port 8080)
+
+Tags: `latest` (main), `sha-<short>`, and `X.Y.Z` / `X.Y` for version tags. Images are linux/amd64.
 
 Current balance with 25 bots per cult (50 Days each): The Source Family 18.9 h, Synanon 20.2 h, Rajneeshpuram 18.5 h, 0% falls. The bots are fairly careful; real players will fall more often.
 
@@ -75,9 +80,9 @@ A pack can declare extra stats, a goal expression, a guard, signature actions wi
 ## Deploying on your own server
 
 1. `cp deploy/.env.example deploy/.env` and set every secret.
-2. `docker compose -f deploy/docker-compose.yml up -d --build`. Only `127.0.0.1:7350` is published; the console port 7351 never is.
+2. `docker compose -f deploy/docker-compose.yml up -d --build`, or `pull` then `up -d` to run the published GHCR images (`IMAGE_TAG` picks the tag). Only `127.0.0.1:7350` is published; the console port 7351 never is. If the packages are private, `docker login ghcr.io` first with a token that has `read:packages`.
 3. Create a Cloudflare Tunnel that routes `play.<your domain>` to `http://nakama:7350`, put its token in `.env`, and start it with `docker compose --profile tunnel up -d`.
-4. Build the client with `VITE_NAKAMA_HOST=play.<your domain> VITE_NAKAMA_SSL=true VITE_NAKAMA_KEY=<server key> npm run build` and publish `apps/web/dist` to Cloudflare Pages. Set `ASSET_BASE=https://<pages domain>/packs` so clients load packs from the CDN; without it they use the `get_pack` RPC.
+4. Build the client with `VITE_NAKAMA_HOST=play.<your domain> VITE_NAKAMA_SSL=true VITE_NAKAMA_KEY=<server key> npm run build` and publish `apps/web/dist` to Cloudflare Pages. Or serve it yourself with the web image: `docker compose --profile web up -d`, route your web hostname to `http://web:8080` in the tunnel, and set `WEB_NAKAMA_HOST` / `WEB_NAKAMA_PORT` / `WEB_NAKAMA_SSL` in `.env` (read at container start into `/config.js`, so no rebuild per server). Set `ASSET_BASE=https://<pages domain>/packs` so clients load packs from the CDN; without it they use the `get_pack` RPC.
 5. Back up Postgres nightly (`pg_dump`) to another machine.
 
 ## Protocol

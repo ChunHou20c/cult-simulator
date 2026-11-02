@@ -19,7 +19,8 @@ export default defineConfig({
       workbox: {
         // App shell is precached; packs are cached by their hashed URL forever.
         globPatterns: ["**/*.{js,css,html,svg}"],
-        globIgnores: ["packs/**"],
+        // config.js is per-deployment runtime config, never precached.
+        globIgnores: ["packs/**", "config.js"],
         runtimeCaching: [
           {
             urlPattern: ({ url }) => url.pathname.startsWith("/packs/"),
