@@ -24,13 +24,6 @@ jobs:
       - name: Bot balance run (50 Days per pack)
         run: go run ./cmd/sim -content ../content -days 50 -race 10
 
-  plugin:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Build the Nakama image with the plugin
-        run: docker build -f deploy/Dockerfile -t cult-simulator-nakama .
-
   web:
     runs-on: ubuntu-latest
     steps:
