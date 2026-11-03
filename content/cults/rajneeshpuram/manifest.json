@@ -1,13 +1,21 @@
 {
-  "schema": "1.1",
+  "schema": "1.2",
   "id": "rajneeshpuram",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "difficulty": "medium",
   "names": "real",
   "theme": {
     "primary": "#b8325a",
     "accent": "#f0a04b",
     "floor": "#3a2430"
+  },
+  "outfit": {
+    "garment": "robe",
+    "colors": ["#c8432b", "#d9682a", "#8e2a35", "#b8323f", "#e08a3a", "#a63a2a"],
+    "hair": ["long", "short", "short", "bun"],
+    "beard": 0.45,
+    "beads": "#6b4325",
+    "feet": "#8a6a4a"
   },
   "stats": {
     "months": {

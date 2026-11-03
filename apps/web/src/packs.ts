@@ -3,6 +3,7 @@
 // otherwise from the get_pack RPC. Nothing here knows a specific cult.
 import { rpc } from "./net";
 import type { SceneDef } from "./Room3D";
+import type { OutfitDef } from "./outfit";
 
 export type Widget = "bar" | "counter" | "currency" | "months";
 
@@ -26,6 +27,8 @@ export interface Manifest {
   actions: ActionDef[];
   /** Movement per action id (or "ritual.<id>") for the 3D figure; see anim.ts. */
   animations?: Record<string, string>;
+  /** What members wear, in 3D and 2D; see outfit.ts. */
+  outfit?: OutfitDef;
 }
 /** A place to sit. r: which way a seated player faces, in degrees (180, the default, faces the dais). */
 export interface Mat { id: string; x: number; y: number; r?: number }

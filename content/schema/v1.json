@@ -7,6 +7,7 @@
   "additionalProperties": false,
   "definitions": {
     "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]{1,39}$" },
+    "color": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
     "key": { "type": "string", "pattern": "^[a-z][a-z0-9_.]{1,79}$" },
     "expr": { "type": "string", "minLength": 1, "maxLength": 400 },
     "value": { "oneOf": [{ "type": "number" }, { "$ref": "#/definitions/expr" }] },
@@ -141,6 +142,21 @@
       "propertyNames": { "pattern": "^(ritual\\.)?[a-z][a-z0-9_]{1,39}$" },
       "additionalProperties": {
         "enum": ["idle", "walk", "kneel", "sit_talk", "talk", "phone", "fold_arms", "dance", "fix", "interact", "pick_up", "carry", "plant", "harvest", "water", "chop", "open", "consume", "raise_hands", "lantern", "torch", "yes", "no", "crouch", "push"]
+      }
+    },
+    "outfit": {
+      "description": "What members wear in the compound (3D and 2D). Display only. Each person gets their own pick of colour, hair and beard, seeded by their player id. Since schema 1.2.",
+      "type": "object",
+      "required": ["garment", "colors"],
+      "additionalProperties": false,
+      "properties": {
+        "garment": { "enum": ["robe", "overalls", "casual"] },
+        "colors": { "type": "array", "minItems": 1, "maxItems": 8, "items": { "$ref": "#/definitions/color" } },
+        "under": { "type": "array", "minItems": 1, "maxItems": 8, "items": { "$ref": "#/definitions/color" } },
+        "hair": { "type": "array", "minItems": 1, "maxItems": 8, "items": { "enum": ["long", "short", "shaved", "bun"] } },
+        "beard": { "type": "number", "minimum": 0, "maximum": 1 },
+        "beads": { "$ref": "#/definitions/color" },
+        "feet": { "$ref": "#/definitions/color" }
       }
     },
     "tick": { "type": "array", "items": { "$ref": "#/definitions/effect" } },

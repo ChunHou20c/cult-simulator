@@ -4,6 +4,7 @@ import { Application, Container, Graphics, Sprite, Text, Texture, FederatedPoint
 import { useStore, S, type Avatar } from "./store";
 import { avatarPos, kneel, walkTo } from "./game";
 import { emblemCanvas } from "./emblem";
+import { lookFor, outfitOf, type Look } from "./outfit";
 
 const hex = (s: string | undefined, fallback: number) => (s ? parseInt(s.slice(1), 16) : fallback);
 
@@ -138,10 +139,9 @@ export class CompoundScene {
         sp = { root, body, ring, label };
         this.sprites.set(a.id, sp);
       }
-      const color = a.defected ? 0x8c8c8c : a.id === st.you ? th.accent : 0xefe6d6;
+      const look = lookFor(outfitOf(st.player ? st.packs[st.player.cult]?.manifest : undefined), a.id, a.defected);
       sp.body.clear();
-      if (a.pose === "kneel") sp.body.ellipse(0, 4, 15, 11).fill(color).circle(0, -8, 7).fill(color);
-      else sp.body.roundRect(-11, -14, 22, 30, 10).fill(color).circle(0, -18, 7).fill(color);
+      drawPerson(sp.body, look, a.pose === "kneel", a.id === st.you ? th.accent : undefined);
     }
   }
 
@@ -197,5 +197,43 @@ export class CompoundScene {
     }
     this.kneelTarget = null;
     walkTo(Math.max(20, Math.min(st.layout.width - 20, p.x)), Math.max(20, Math.min(st.layout.height - 20, p.y)));
+  }
+}
+
+/** A person seen from above and in front: the cult's clothes, hair and beads (outfit.ts). */
+function drawPerson(g: Graphics, l: Look, kneeling: boolean, you?: number) {
+  const foot = kneeling ? 14 : 17;
+  if (you !== undefined) g.ellipse(0, foot, 16, 6).stroke({ color: you, width: 2.5, alpha: 0.95 });
+  let headY: number;
+  if (kneeling) {
+    g.ellipse(0, 4, 15, 11).fill(l.garment === "casual" ? l.under : l.cloth);
+    if (l.garment === "overalls") g.roundRect(-10, -6, 20, 10, 5).fill(l.under).rect(-6, -4, 12, 8).fill(l.cloth);
+    if (l.garment === "casual") g.roundRect(-10, -6, 20, 11, 5).fill(l.cloth);
+    headY = -8;
+  } else {
+    if (l.garment === "robe") {
+      g.poly([-9, -13, 9, -13, 13.5, 16, -13.5, 16]).fill(l.cloth).roundRect(-11, -15, 22, 10, 5).fill(l.cloth);
+      g.rect(-5, 15, 4, 2).fill(l.feet).rect(1, 15, 4, 2).fill(l.feet);
+    } else if (l.garment === "overalls") {
+      g.roundRect(-11, -14, 22, 16, 6).fill(l.under);
+      g.rect(-10, 0, 9, 16).fill(l.cloth).rect(1, 0, 9, 16).fill(l.cloth).rect(-7, -10, 14, 12).fill(l.cloth);
+      g.rect(-6, -14, 2, 5).fill(l.cloth).rect(4, -14, 2, 5).fill(l.cloth);
+    } else {
+      g.rect(-10, 0, 9, 16).fill(l.under).rect(1, 0, 9, 16).fill(l.under);
+      g.roundRect(-11, -14, 22, 17, 6).fill(l.cloth);
+    }
+    headY = -18;
+  }
+  if (l.hair === "long") g.roundRect(-8.5, headY - 8, 17, 17, 7).fill(l.hairColor);
+  g.circle(0, headY, 7).fill(l.skin);
+  if (l.hair !== "shaved") g.arc(0, headY - 0.5, 7.4, Math.PI * 1.05, Math.PI * 1.95).fill(l.hairColor);
+  if (l.hair === "bun") g.circle(0, headY - 8, 3.4).fill(l.hairColor);
+  if (l.beard) g.ellipse(0, headY + 5, 4.6, 3.6).fill(l.hairColor);
+  if (l.beads !== undefined) {
+    for (let i = 0; i <= 8; i++) {
+      const t = (i / 8) * Math.PI;
+      g.circle(-6 * Math.cos(t), headY + 7 + Math.sin(t) * 7, 1.3).fill(l.beads);
+    }
+    g.circle(0, headY + 15, 2.2).fill(l.beads);
   }
 }

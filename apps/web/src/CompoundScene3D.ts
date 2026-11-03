@@ -10,6 +10,7 @@ import { clipFor } from "./anim";
 import { loadProps, PropMaker } from "./Props";
 import { buildRoom3D } from "./Room3D";
 import { emblemCanvas } from "./emblem";
+import { lookFor, outfitOf, type Look } from "./outfit";
 
 // Camera angle down from horizontal: steeper on portrait screens, so the
 // room uses the tall screen instead of leaving empty sky and ground.
@@ -27,8 +28,6 @@ type Sprite = {
   seenRitual?: number;
 };
 
-const CREAM = new THREE.Color(0xefe6d6);
-const GREY = new THREE.Color(0x8c8c8c);
 const color = (s: string | undefined, fallback: number) => new THREE.Color(s ? parseInt(s.slice(1), 16) : fallback);
 
 export class CompoundScene3D {
@@ -60,7 +59,7 @@ export class CompoundScene3D {
   destroyed = false;
   lastFrame = performance.now();
   figures = new Figures();
-  accent = new THREE.Color(0xe0b44c); // your own figure's colour, from the pack theme
+  accent = new THREE.Color(0xe0b44c); // the pack theme's accent, for the ring round your feet
   hemi = new THREE.HemisphereLight(0xfff1dc, 0x2a1f16, 1.6);
   sun = new THREE.DirectionalLight(0xffe2b8, 1.6);
   props?: Awaited<ReturnType<typeof loadProps>>;
@@ -74,6 +73,8 @@ export class CompoundScene3D {
     ring: new THREE.RingGeometry(0.82, 1, 48),
   };
   shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.28, depthWrite: false });
+  // Everyone wears the cult's clothes, you too; a ring at your feet finds you.
+  youMat = new THREE.MeshBasicMaterial({ color: 0xe0b44c, transparent: true, opacity: 0.9, depthWrite: false, side: THREE.DoubleSide });
 
   mount(el: HTMLElement) {
     this.el = el;
@@ -103,6 +104,7 @@ export class CompoundScene3D {
       if (s.layout !== prev.layout || s.player?.cult !== prev.player?.cult) {
         this.buildRoom();
         this.resize();
+        this.syncAvatars(); // a new cult: new clothes
       }
       if (s.avatars !== prev.avatars) this.syncAvatars();
     });
@@ -112,10 +114,11 @@ export class CompoundScene3D {
       .then((m) => {
         if (this.destroyed) return;
         this.figures.model = m;
-        for (const sp of this.sprites.values()) {
+        for (const [id, sp] of this.sprites) {
           sp.root.remove(sp.fig.object);
           sp.fig.dispose();
-          sp.fig = this.figures.make(CREAM);
+          const a = S().avatars[id];
+          sp.fig = this.figures.make(a ? this.lookOf(a) : lookFor(outfitOf(undefined), id));
           sp.root.add(sp.fig.object);
         }
       })
@@ -181,6 +184,7 @@ export class CompoundScene3D {
     if (!L) return;
     const th = this.theme();
     this.accent = th.accent;
+    this.youMat.color.copy(th.accent);
     const st = S();
     const pack = st.player ? st.packs[st.player.cult] : undefined;
     const def = pack?.scene;
@@ -344,24 +348,32 @@ export class CompoundScene3D {
       let sp = this.sprites.get(a.id);
       if (!sp) {
         const root = new THREE.Group();
-        const fig = this.figures.make(this.tintOf(a));
+        const fig = this.figures.make(this.lookOf(a));
         const shadow = new THREE.Mesh(this.geo.shadow, this.shadowMat);
         shadow.rotation.x = -Math.PI / 2;
         shadow.position.y = 0.6;
         const label = this.labelSprite(a.name, a.id === st.you);
         root.add(shadow, fig.object, label);
+        if (a.id === st.you) {
+          const ring = new THREE.Mesh(this.geo.ring, this.youMat);
+          ring.rotation.x = -Math.PI / 2;
+          ring.position.y = 0.8;
+          ring.scale.setScalar(19);
+          root.add(ring);
+        }
         this.people.add(root);
         const [x, y] = avatarPos(a, Date.now() + st.clockSkew);
         // Movements already over when we arrive are not replayed.
         sp = { root, fig, label, last: [x, y], facing: 0, seenAct: a.act?.at, seenRitual: a.ritual?.at };
         this.sprites.set(a.id, sp);
-      }
+      } else sp.fig.dress(this.lookOf(a)); // no-op unless they changed (defected)
     }
   }
 
-  tintOf(a: Avatar): THREE.Color {
-    if (a.defected) return GREY;
-    return a.id === S().you ? this.accent : CREAM;
+  /** What this person wears: the room's cult outfit, their own picks from it. */
+  lookOf(a: Avatar): Look {
+    const st = S();
+    return lookFor(outfitOf(st.player ? st.packs[st.player.cult]?.manifest : undefined), a.id, a.defected);
   }
 
   frame() {
@@ -400,7 +412,7 @@ export class CompoundScene3D {
         sp.seenRitual = a.ritual.at;
         sp.fig.play(clipFor("ritual." + a.ritual.id, manifest));
       }
-      sp.fig.update(dt, { moving, kneel: kneeling, tint: this.tintOf(a) });
+      sp.fig.update(dt, { moving, kneel: kneeling });
       sp.label.position.set(0, sp.fig.headY() + 14, 0);
       this.ritualRing(a);
     }
