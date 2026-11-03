@@ -104,7 +104,8 @@ export function Compound() {
           <ProgressBar value={cult.progress ?? 0} color={pack.manifest.theme?.accent} label="Progress" />
         </div>
         <div className="energy" aria-label={`Energy ${energy} of ${engine.maxEnergy}`}>
-          {Array.from({ length: engine.maxEnergy }, (_, i) => <span key={i} className={i < energy ? "on" : ""} />)}
+          {Array.from({ length: engine.maxEnergy }, (_, i) => <span key={i} className={`pip ${i < energy ? "on" : ""}`} />)}
+          <span className="energy-num mono" aria-hidden="true">{energy}⚡</span>
         </div>
         <button className={`round ${help ? "on" : ""}`} onClick={() => setHelp(!help)} aria-label={help ? "Hide help" : "Show help"} aria-expanded={help}>?</button>
       </header>
