@@ -219,8 +219,12 @@ func (e *Engine) Apply(d *WorldDay, r ActionReq) ActionResult {
 }
 
 func (e *Engine) applyDefector(p *content.Pack, cs *CultState, r ActionReq, res *ActionResult, now, endsAt int64) bool {
-	// Each extra defector adds less than the last.
+	// Each extra defector adds less than the last. A played mini game
+	// scales the effect like a cult action's gain.
 	dim := 1 / math.Sqrt(math.Max(1, float64(cs.Defectors)))
+	if r.Played {
+		dim *= minigame.Gain(r.Quality)
+	}
 	var effs []content.Effect
 	switch r.Action {
 	case "gather_evidence":

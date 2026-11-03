@@ -230,3 +230,9 @@ button.danger { color: var(--bad); }
 .mg-pop.g6 { fill: #8bc48a; }
 .mg-pop.g0 { fill: #e57373; }
 @media (prefers-reduced-motion: reduce) { .slot.converge { box-shadow: 0 0 0 3px var(--accent, var(--gold)); } }
+
+/* ---- defector icons ---- */
+.slot-evidence { background: #4f5d6b; }
+.slot-family { background: #3d7a6a; }
+.slot-journalist { background: #6b4f8a; }
+.slot-badge { position: absolute; bottom: -6px; right: -10px; padding: 1px 6px; border-radius: 99px; background: #f3eadb; color: #1b1713; font-size: 0.7rem; font-weight: 700; }

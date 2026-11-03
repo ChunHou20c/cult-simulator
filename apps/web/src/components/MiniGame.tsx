@@ -4,7 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 import { finishRound } from "../game";
 import { FLICK_X, FLICK_Y, FLICK_SPEED, flickGrade, layout, needle, spaced, strangerX, timingGrade, type Input, type Layout } from "../minigame/core";
-import type { ActionDef, Slot } from "../packs";
+import { iconOf, type ActionDef } from "../packs";
 import type { Round } from "../store";
 import { gradeMark, SlotIcon } from "./SlotIcon";
 
@@ -91,7 +91,7 @@ export function MiniGame({ round, def }: { round: Round; def: ActionDef }) {
   };
 
   const now = performance.now();
-  const slot = (def.slot ?? "work") as Slot;
+  const slot = iconOf(def);
   const skin = def.skin ?? {};
   return (
     <div className="minigame" role="dialog" aria-label="Mini game">

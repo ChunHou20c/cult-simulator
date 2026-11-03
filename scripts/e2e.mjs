@@ -132,6 +132,14 @@ async function main() {
   b0.socket.sendMatchState(b0.matchId, OP.ACT, encode({ actionId: "recruit", clientSeq: 201 }));
   await sleep(800);
   check(b0.results.some((r) => r.clientSeq === 201 && r.reason === "defected"), "a defector cannot act for the cult");
+  // A defector's actions also play a mini game round.
+  b0.challenge = null;
+  b0.socket.sendMatchState(b0.matchId, OP.ACT_START, encode({ actionId: "call_family", clientSeq: 202 }));
+  await sleep(700);
+  check(b0.challenge?.game === "beat", `defector round handed out: ${b0.challenge?.game}`);
+  if (b0.challenge) b0.socket.sendMatchState(b0.matchId, OP.ACT_FINISH, encode({ nonce: b0.challenge.nonce, inputs: [], skip: true }));
+  await sleep(1500);
+  check(b0.results.some((r) => r.clientSeq === 202 && r.ok && r.quality === 0.5), "defector round (skipped) accepted");
 
   // Energy runs out (cooldown on gather is 20 s, so use the journalist refusal and energy).
   for (let k = 0; k < 3; k++) peer.socket.sendMatchState(peer.matchId, OP.ACT, encode({ actionId: "recruit", clientSeq: 400 + k }));

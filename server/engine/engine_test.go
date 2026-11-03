@@ -177,3 +177,22 @@ func TestQualityScalesGainAndHeat(t *testing.T) {
 		t.Fatalf("heat: perfect %v miss %v base %v", sp, sm, s)
 	}
 }
+
+// A defector's played round scales its effect by Gain(q) too.
+func TestDefectorQuality(t *testing.T) {
+	e := load(t)
+	id := firstCult(e)
+	run := func(played bool, q float64) float64 {
+		d := e.NewDay("d", t0, t0+86400, nil)
+		e.Defect(d, id)
+		before := d.Cults[id].Stats["exposure"]
+		if r := e.Apply(d, ActionReq{Cult: id, Action: "gather_evidence", Defector: true, At: t0, Played: played, Quality: q}); !r.OK {
+			t.Fatalf("refused: %+v", r)
+		}
+		return d.Cults[id].Stats["exposure"] - before
+	}
+	base, skip, perfect := run(false, 0), run(true, 0.5), run(true, 1)
+	if math.Abs(skip-base) > 1e-9 || math.Abs(perfect-base*1.4) > 1e-9 {
+		t.Fatalf("base %v skip %v perfect %v", base, skip, perfect)
+	}
+}
