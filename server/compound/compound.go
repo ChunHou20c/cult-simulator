@@ -152,7 +152,8 @@ func (m *Match) MatchJoinAttempt(ctx context.Context, logger runtime.Logger, db 
 func (s *state) view(pl *player, nowMs int64) map[string]any {
 	x, y := pl.pos(nowMs)
 	return map[string]any{"id": pl.pd.UserID, "name": pl.pd.Name, "x": x, "y": y, "tx": pl.x1, "ty": pl.y1,
-		"t0": pl.t0, "pose": pl.pose, "mat": pl.mat, "defected": pl.pd.Defected}
+		// x, y is where the player is at nowMs, so the walk restarts from there.
+		"t0": nowMs, "pose": pl.pose, "mat": pl.mat, "defected": pl.pd.Defected}
 }
 
 func (s *state) energyOf(pl *player, now int64) float64 {
