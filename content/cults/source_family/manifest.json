@@ -1,13 +1,20 @@
 {
-  "schema": "1.1",
+  "schema": "1.2",
   "id": "source_family",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "difficulty": "tutorial",
   "names": "real",
   "theme": {
     "primary": "#c8743a",
     "accent": "#f2d27a",
     "floor": "#3b2a1e"
+  },
+  "outfit": {
+    "garment": "robe",
+    "colors": ["#f4efe3", "#f4efe3", "#ece3cf", "#efe7d8", "#e6dcc4", "#f1e4c6"],
+    "hair": ["long", "long", "long", "bun"],
+    "beard": 0.6,
+    "feet": "#a0794f"
   },
   "stats": {
     "profit": {

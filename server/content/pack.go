@@ -11,7 +11,7 @@ import (
 // understands. Within major 1 changes are additive only.
 const (
 	SchemaMajor = 1
-	SchemaMinor = 1
+	SchemaMinor = 2
 )
 
 // Core stats every cult has. Packs may add their own.
@@ -44,6 +44,19 @@ type Manifest struct {
 	// Animations picks the 3D figure's movement per action id (or
 	// "ritual.<id>"). Display only: the server never reads it.
 	Animations map[string]string `json:"animations,omitempty"`
+	// Outfit is what members wear in the compound (schema 1.2). Display
+	// only: the server never reads it, it just passes it to clients.
+	Outfit *OutfitDef `json:"outfit,omitempty"`
+}
+
+type OutfitDef struct {
+	Garment string   `json:"garment"`
+	Colors  []string `json:"colors"`
+	Under   []string `json:"under,omitempty"`
+	Hair    []string `json:"hair,omitempty"`
+	Beard   *float64 `json:"beard,omitempty"`
+	Beads   string   `json:"beads,omitempty"`
+	Feet    string   `json:"feet,omitempty"`
 }
 
 type StatDef struct {

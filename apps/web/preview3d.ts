@@ -1,8 +1,10 @@
 // Dev-only 3D preview with fake players, no server needed:
 //   npm run dev -w apps/web, then open /preview3d.html?cult=synanon
+// Add &2d=1 to see the same room in the 2D view.
 // Not part of the production build (Vite only builds index.html).
 import { S } from "./src/store";
 import { CompoundScene3D } from "./src/CompoundScene3D";
+import { CompoundScene } from "./src/CompoundScene";
 const cult = new URLSearchParams(location.search).get("cult") || "rajneeshpuram";
 const mods = import.meta.glob("../../content/cults/*/*.json", { eager: true }) as Record<string, any>;
 const manifest = mods[`../../content/cults/${cult}/manifest.json`].default;
@@ -22,8 +24,10 @@ for (let i = 0; i < 24; i++) {
 }
 avatars.me = { id: "me", name: "You (Still Lantern)", fx: compound.width / 2, fy: compound.height - 80, tx: compound.width / 2, ty: compound.height - 80, t0: 0, pose: "stand" };
 S().set({ you: "me", avatars, layout: compound, player: { cult } as any, packs: { [cult]: { manifest, emblem } as any }, convergence: { key: "ritual:chant", at: now + 300 } });
+const flat = new URLSearchParams(location.search).has("2d");
 const scene = new CompoundScene3D();
-scene.mount(document.getElementById("c")!);
+if (flat) new CompoundScene().mount(document.getElementById("c")!);
+else scene.mount(document.getElementById("c")!);
 // ?zoom=0.6 moves the camera closer (like pinch or the mouse wheel).
 const zoom = Number(new URLSearchParams(location.search).get("zoom"));
 if (zoom) scene.zoom = zoom;
