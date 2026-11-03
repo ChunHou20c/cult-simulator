@@ -5,6 +5,7 @@ import { actionDef, DEFECTOR_ACTIONS, t } from "../packs";
 import { cultView, energyNow, useStore } from "../store";
 import { Countdown, ProgressBar, StatList, useNow } from "./widgets";
 import { Ticker } from "./Ticker";
+import { canUse3D, setView, useView, type View } from "../view";
 
 const REASONS: Record<string, string> = {
   no_energy: "Not enough energy",
@@ -17,13 +18,29 @@ const REASONS: Record<string, string> = {
   world_unavailable: "The world is busy, try again",
 };
 
-function Canvas() {
+function Canvas({ view }: { view: View }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const scene = new CompoundScene();
-    if (ref.current) scene.mount(ref.current);
-    return () => scene.destroy();
-  }, []);
+    let scene: { destroy(): void } | undefined;
+    let gone = false;
+    if (view === "3d") {
+      // Loaded on demand so the 2D game doesn't download Three.js.
+      import("../CompoundScene3D").then(({ CompoundScene3D }) => {
+        if (gone || !ref.current) return;
+        const s = new CompoundScene3D();
+        s.mount(ref.current);
+        scene = s;
+      }).catch(() => setView("2d"));
+    } else {
+      const s = new CompoundScene();
+      if (ref.current) s.mount(ref.current);
+      scene = s;
+    }
+    return () => {
+      gone = true;
+      scene?.destroy();
+    };
+  }, [view]);
   return <div className="canvas" ref={ref} aria-label="The compound. Tap to walk, tap a mat to kneel." />;
 }
 
@@ -33,6 +50,7 @@ export function Compound() {
   const now = useNow(500);
   const [err, setErr] = useState<string | null>(null);
   const [help, setHelp] = useState(false);
+  const view = useView();
   if (!world || !player || !engine) return null;
   const pack = packs[player.cult];
   const cult = cultView(world, player.cult);
@@ -77,7 +95,7 @@ export function Compound() {
 
   return (
     <main className="compound" style={{ ["--accent" as any]: pack.manifest.theme?.accent, ["--primary" as any]: pack.manifest.theme?.primary }}>
-      <Canvas />
+      <Canvas key={view} view={view} />
 
       <header className="hud-top">
         <button className="round" onClick={() => backToLobby()} aria-label="Back to the lobby">←</button>
@@ -122,6 +140,11 @@ export function Compound() {
               <ProgressBar value={c.progress ?? 0} color={packs[c.id]?.manifest.theme?.accent} />
             </div>
           ))}
+          {canUse3D() && (
+            <p className="small muted">
+              View: <button className="link" onClick={() => setView(view === "3d" ? "2d" : "3d")}>{view === "3d" ? "switch to 2D" : "try 3D (preview)"}</button>
+            </p>
+          )}
           <Ticker />
         </aside>
       )}
