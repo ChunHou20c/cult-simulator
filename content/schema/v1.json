@@ -49,7 +49,25 @@
         "requires": { "$ref": "#/definitions/expr" },
         "effects": { "type": "array", "items": { "$ref": "#/definitions/effect" } },
         "buff": { "$ref": "#/definitions/buff" },
-        "phases": { "type": "array", "items": { "$ref": "#/definitions/id" } }
+        "phases": { "type": "array", "items": { "$ref": "#/definitions/id" } },
+        "slot": {
+          "description": "Since 1.1. One of the three action buttons: recruit (person-plus icon), work (coin), devote (heart). A pack uses all three or none.",
+          "enum": ["recruit", "work", "devote"]
+        },
+        "game": {
+          "description": "Since 1.1. Mini game from the engine catalog (server/minigame) played for this action. Any game can go in any slot.",
+          "enum": ["flick", "timing", "beat"]
+        },
+        "skin": {
+          "description": "Since 1.1. Display only: what the mini game shows, as short emoji or symbols.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "target": { "type": "string", "maxLength": 16 },
+            "item": { "type": "string", "maxLength": 16 },
+            "zone": { "type": "string", "maxLength": 16 }
+          }
+        }
       }
     },
     "fall": {

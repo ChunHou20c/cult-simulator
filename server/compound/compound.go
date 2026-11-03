@@ -5,7 +5,10 @@ package compound
 
 import (
 	"context"
+	"crypto/rand"
 	"database/sql"
+	"encoding/binary"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -15,20 +18,21 @@ import (
 
 	"github.com/cult-simulator/server/content"
 	"github.com/cult-simulator/server/engine"
+	"github.com/cult-simulator/server/minigame"
 	"github.com/cult-simulator/server/protocol"
 	"github.com/cult-simulator/server/world"
 )
 
 const (
-	ModuleName     = "compound"
-	tickRate       = 10
-	batchEvery     = 2   // ticks: 200 ms
-	worldEvery     = 10  // ticks: 1 s
-	saveEvery      = 300 // ticks: 30 s
-	emptyTimeout   = 600 // ticks with nobody inside before the room closes
-	walkSpeed      = 140.0 // px per second
-	kneelReach     = 48.0
-	roomLimit      = protocol.RoomSize - 2 // leave seats for reconnects
+	ModuleName   = "compound"
+	tickRate     = 10
+	batchEvery   = 2     // ticks: 200 ms
+	worldEvery   = 10    // ticks: 1 s
+	saveEvery    = 300   // ticks: 30 s
+	emptyTimeout = 600   // ticks with nobody inside before the room closes
+	walkSpeed    = 140.0 // px per second
+	kneelReach   = 48.0
+	roomLimit    = protocol.RoomSize - 2 // leave seats for reconnects
 )
 
 type player struct {
@@ -38,10 +42,11 @@ type player struct {
 	dirty    bool
 	x0, y0   float64
 	x1, y1   float64
-	t0       int64 // ms
+	t0       int64  // ms
 	pose     string // stand, kneel
 	mat      string
 	cooldown map[string]int64 // action -> unix second it is ready
+	round    *round           // open mini game, if any
 	lastMsg  int64
 	msgs     int
 }
@@ -65,7 +70,24 @@ type pending struct {
 	energy   float64
 	defector bool
 	req      engine.ActionReq
+	grades   []float64
 }
+
+// round is a player's open mini game: the server picked the seed, so only
+// it knows the layout the inputs are scored against.
+type round struct {
+	nonce  string
+	seed   uint32
+	game   string
+	action string
+	seq    int64
+	issued int64 // ms
+	cost   float64
+	conv   bool
+}
+
+// roundTTL: a round not finished by then is scored as a skip.
+const roundTTL = 15000
 
 type sighting struct {
 	user string
@@ -81,6 +103,7 @@ type state struct {
 	mats      map[string]string // mat -> user
 	queue     []pending
 	recent    map[string][]sighting
+	watch     map[string]*minigame.Watch // user -> recent round results
 	empty     int
 	ended     bool
 	label     string
@@ -107,7 +130,7 @@ func (s *state) makeLabel() string {
 }
 
 func (m *Match) MatchInit(ctx context.Context, logger runtime.Logger, db *sql.DB, nk runtime.NakamaModule, params map[string]interface{}) (interface{}, int, string) {
-	s := &state{players: map[string]*player{}, joining: map[string]*player{}, mats: map[string]string{}, recent: map[string][]sighting{}}
+	s := &state{players: map[string]*player{}, joining: map[string]*player{}, mats: map[string]string{}, recent: map[string][]sighting{}, watch: map[string]*minigame.Watch{}}
 	s.id, _ = ctx.Value(runtime.RUNTIME_CTX_MATCH_ID).(string)
 	s.cult, _ = params["cult"].(string)
 	s.day, _ = params["day"].(string)
@@ -231,6 +254,9 @@ func (m *Match) MatchLeave(ctx context.Context, logger runtime.Logger, db *sql.D
 		if pl == nil || pl.p == nil || pl.p.GetSessionId() != p.GetSessionId() {
 			continue // an older session of a reconnected player
 		}
+		if pl.round != nil {
+			s.finishRound(pl, nil, true, time.Now().UnixMilli())
+		}
 		s.save(ctx, logger, nk, pl)
 		if pl.mat != "" {
 			delete(s.mats, pl.mat)
@@ -280,6 +306,11 @@ type ritualMsg struct {
 type actMsg struct {
 	Action string `json:"actionId"`
 	Seq    int64  `json:"clientSeq"`
+}
+type finishMsg struct {
+	Nonce  string           `json:"nonce"`
+	Inputs []minigame.Input `json:"inputs"`
+	Skip   bool             `json:"skip"`
 }
 
 func (m *Match) MatchLoop(ctx context.Context, logger runtime.Logger, db *sql.DB, nk runtime.NakamaModule, dispatcher runtime.MatchDispatcher, tick int64, st interface{}, messages []runtime.MatchData) interface{} {
@@ -341,11 +372,31 @@ func (m *Match) MatchLoop(ctx context.Context, logger runtime.Logger, db *sql.DB
 				continue
 			}
 			s.act(dispatcher, pub, pl, am, msg.GetOpCode() == protocol.OpDefectAct, nowMs)
+		case protocol.OpActStart:
+			var am actMsg
+			if world.Decode(msg.GetData(), &am) != nil {
+				continue
+			}
+			s.startRound(dispatcher, pub, pl, am, nowMs)
+		case protocol.OpActFinish:
+			var fm finishMsg
+			if world.Decode(msg.GetData(), &fm) != nil || pl.round == nil || fm.Nonce != pl.round.nonce {
+				continue
+			}
+			if fm.Skip {
+				fm.Inputs = nil
+			}
+			s.finishRound(pl, fm.Inputs, fm.Skip, nowMs)
 		case protocol.OpHeartbeat:
 			// keeps the socket warm through Cloudflare; nothing to do
 		}
 	}
 
+	for _, pl := range s.players {
+		if pl.round != nil && nowMs-pl.round.issued > roundTTL {
+			s.finishRound(pl, nil, true, nowMs)
+		}
+	}
 	if tick%batchEvery == 0 && len(s.queue) > 0 {
 		s.flush(ctx, logger, nk, dispatcher, now)
 	}
@@ -418,11 +469,15 @@ func (s *state) converge(d runtime.MatchDispatcher, key, user string, nowMs int6
 	return false
 }
 
-func (s *state) result(d runtime.MatchDispatcher, pl *player, seq int64, ok bool, reason string, deltas map[string]float64) {
-	_ = d.BroadcastMessage(protocol.OpActResult, world.Encode(map[string]any{
+func (s *state) result(d runtime.MatchDispatcher, pl *player, seq int64, ok bool, reason string, deltas map[string]float64, p ...pending) {
+	m := map[string]any{
 		"clientSeq": seq, "ok": ok, "reason": reason, "energy": pl.pd.Energy, "energyAt": pl.pd.EnergyAt,
 		"deltas": deltas, "cooldowns": pl.cooldown, "evidence": pl.pd.Evidence, "actions": pl.pd.Actions,
-		"contribution": pl.pd.Contribution}), []runtime.Presence{pl.p}, nil, true)
+		"contribution": pl.pd.Contribution}
+	if len(p) > 0 && p[0].req.Played {
+		m["quality"], m["grades"] = p[0].req.Quality, p[0].grades
+	}
+	_ = d.BroadcastMessage(protocol.OpActResult, world.Encode(m), []runtime.Presence{pl.p}, nil, true)
 }
 
 func defectorEnergy(string) int { return 1 }
@@ -436,36 +491,106 @@ func isDefectorAction(id string) bool {
 	return false
 }
 
-// act checks energy, cooldown and the action's requires flag against the
-// latest world snapshot, then queues it for the next batch.
+// act checks and takes an action with no mini game round (old clients,
+// defector actions) and queues it for the next batch.
 func (s *state) act(d runtime.MatchDispatcher, pub *world.Published, pl *player, am actMsg, defector bool, nowMs int64) {
+	cost, ok := s.begin(d, pub, pl, am, defector, nowMs)
+	if !ok {
+		return
+	}
+	conv := !defector && s.converge(d, "act:"+am.Action, pl.pd.UserID, nowMs)
+	s.queue = append(s.queue, pending{user: pl.pd.UserID, seq: am.Seq, action: am.Action, energy: float64(cost), defector: defector,
+		req: engine.ActionReq{UserID: pl.pd.UserID, Name: pl.pd.Name, Cult: s.cult, Action: am.Action, Defector: defector,
+			Evidence: pl.pd.Evidence, Converged: conv, At: nowMs / 1000}})
+}
+
+// startRound takes the action now (energy, cooldown, the room sees the
+// movement) and hands the player a mini game round. The action is applied
+// when the round is finished, skipped or expires.
+func (s *state) startRound(d runtime.MatchDispatcher, pub *world.Published, pl *player, am actMsg, nowMs int64) {
+	if pl.round != nil {
+		s.finishRound(pl, nil, true, nowMs)
+	}
+	game := ""
+	if pub != nil {
+		if p := pub.Content.Packs[s.cult]; p != nil {
+			if a := p.Actions[am.Action]; a != nil {
+				game = a.Game
+			}
+		}
+	}
+	if game == "" {
+		s.act(d, pub, pl, am, false, nowMs)
+		return
+	}
+	cost, ok := s.begin(d, pub, pl, am, false, nowMs)
+	if !ok {
+		return
+	}
+	var b [12]byte
+	_, _ = rand.Read(b[:])
+	r := &round{nonce: hex.EncodeToString(b[4:]), seed: binary.LittleEndian.Uint32(b[:4]), game: game, action: am.Action,
+		seq: am.Seq, issued: nowMs, cost: float64(cost)}
+	r.conv = s.converge(d, "act:"+am.Action, pl.pd.UserID, nowMs)
+	pl.round = r
+	_ = d.BroadcastMessage(protocol.OpActChallenge, world.Encode(map[string]any{
+		"clientSeq": am.Seq, "nonce": r.nonce, "seed": r.seed, "game": r.game, "action": r.action}), []runtime.Presence{pl.p}, nil, true)
+}
+
+// finishRound scores the round's raw inputs (a skip or an expired round
+// scores minigame.SkipQuality) and queues the action.
+func (s *state) finishRound(pl *player, inputs []minigame.Input, skip bool, nowMs int64) {
+	r := pl.round
+	pl.round = nil
+	q, grades := minigame.SkipQuality, []float64(nil)
+	if !skip {
+		var ok bool
+		q, grades, ok = minigame.Score(r.game, r.seed, inputs, float64(nowMs-r.issued))
+		if !ok {
+			q, grades = minigame.SkipQuality, nil
+		}
+		w := s.watch[pl.pd.UserID]
+		if w == nil {
+			w = &minigame.Watch{}
+			s.watch[pl.pd.UserID] = w
+		}
+		q = w.Note(q)
+	}
+	s.queue = append(s.queue, pending{user: pl.pd.UserID, seq: r.seq, action: r.action, energy: r.cost, grades: grades,
+		req: engine.ActionReq{UserID: pl.pd.UserID, Name: pl.pd.Name, Cult: s.cult, Action: r.action,
+			Converged: r.conv, At: nowMs / 1000, Played: true, Quality: q}})
+}
+
+// begin checks energy, cooldown and the action's requires flag against the
+// latest world snapshot, then takes the energy and starts the cooldown.
+func (s *state) begin(d runtime.MatchDispatcher, pub *world.Published, pl *player, am actMsg, defector bool, nowMs int64) (int, bool) {
 	now := nowMs / 1000
 	if pub == nil || pub.Snap.DayID != s.day || pub.Snap.Phase != engine.PhaseLive {
 		s.result(d, pl, am.Seq, false, "day_over", nil)
-		return
+		return 0, false
 	}
 	var cost int
 	var cooldownSec int
 	if defector {
 		if !pl.pd.Defected || !isDefectorAction(am.Action) {
 			s.result(d, pl, am.Seq, false, "not_a_defector_action", nil)
-			return
+			return 0, false
 		}
 		if am.Action == "talk_to_journalist" && pl.pd.Evidence < content.EvidenceForJournalist {
 			s.result(d, pl, am.Seq, false, "need_evidence", nil)
-			return
+			return 0, false
 		}
 		cost, cooldownSec = defectorEnergy(am.Action), 20
 	} else {
 		if pl.pd.Defected {
 			s.result(d, pl, am.Seq, false, "defected", nil)
-			return
+			return 0, false
 		}
 		p := pub.Content.Packs[s.cult]
 		a := p.Actions[am.Action]
 		if a == nil {
 			s.result(d, pl, am.Seq, false, "unknown_action", nil)
-			return
+			return 0, false
 		}
 		var can bool
 		for _, cv := range pub.Snap.Cults {
@@ -475,17 +600,17 @@ func (s *state) act(d runtime.MatchDispatcher, pub *world.Published, pl *player,
 		}
 		if !can {
 			s.result(d, pl, am.Seq, false, "requirement", nil)
-			return
+			return 0, false
 		}
 		cost, cooldownSec = a.Energy, a.CooldownSec
 	}
 	if pl.cooldown[am.Action] > now {
 		s.result(d, pl, am.Seq, false, "cooldown", nil)
-		return
+		return 0, false
 	}
 	if s.energyOf(pl, now) < float64(cost) {
 		s.result(d, pl, am.Seq, false, "no_energy", nil)
-		return
+		return 0, false
 	}
 	if pl.pd.Energy >= engine.MaxEnergy {
 		pl.pd.EnergyAt = now // refill clock starts when energy drops below max
@@ -497,10 +622,7 @@ func (s *state) act(d runtime.MatchDispatcher, pub *world.Published, pl *player,
 	}
 	// Everyone in the room sees the movement now, before the world settles it.
 	_ = d.BroadcastMessage(protocol.OpActSeen, world.Encode(map[string]any{"id": pl.pd.UserID, "action": am.Action}), nil, nil, true)
-	conv := !defector && s.converge(d, "act:"+am.Action, pl.pd.UserID, nowMs)
-	s.queue = append(s.queue, pending{user: pl.pd.UserID, seq: am.Seq, action: am.Action, energy: float64(cost), defector: defector,
-		req: engine.ActionReq{UserID: pl.pd.UserID, Name: pl.pd.Name, Cult: s.cult, Action: am.Action, Defector: defector,
-			Evidence: pl.pd.Evidence, Converged: conv, At: now}})
+	return cost, true
 }
 
 // flush sends the queued actions to the world in one signal and reports
@@ -536,7 +658,7 @@ func (s *state) flush(ctx context.Context, logger runtime.Logger, nk runtime.Nak
 		}
 		pl.pd.Evidence += r.EvidenceGain - r.EvidenceUsed
 		pl.dirty = true
-		s.result(d, pl, p.seq, true, "", r.Deltas)
+		s.result(d, pl, p.seq, true, "", r.Deltas, p)
 	}
 	if err != nil {
 		logger.Error("compound %s: world signal: %v", s.cult, err)

@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/cult-simulator/server/minigame"
 	"github.com/cult-simulator/server/protocol"
 	"github.com/santhosh-tekuri/jsonschema/v5"
 )
@@ -80,7 +81,7 @@ func compileCond(src string) (*Expr, error) {
 }
 
 func compileAction(d ActionDef) (*Action, error) {
-	a := &Action{ID: d.ID, Energy: d.Energy, CooldownSec: d.CooldownSec, Buff: d.Buff}
+	a := &Action{ID: d.ID, Energy: d.Energy, CooldownSec: d.CooldownSec, Buff: d.Buff, Slot: d.Slot, Game: d.Game}
 	if a.Energy == 0 {
 		a.Energy = 1
 	}
@@ -258,6 +259,7 @@ func (l *Loader) LoadPack(dir string) (*Pack, error) {
 		p.Actions[a.ID] = a
 		p.Order = append(p.Order, a.ID)
 	}
+	slotLint(p, add)
 	if p.Tick, err = compileEffects(m.Tick); err != nil {
 		add("tick: %v", err)
 	}
@@ -340,6 +342,54 @@ func (l *Loader) LoadPack(dir string) (*Pack, error) {
 		return nil, ve
 	}
 	return p, nil
+}
+
+// slotLint checks the three-button layout (schema 1.1): a pack that slots
+// any action slots exactly three, one per slot, each with a catalog mini
+// game, and turns the engine's shared actions off. Slotted actions are then
+// shown in slot order.
+func slotLint(p *Pack, add func(string, ...any)) {
+	bySlot := map[string]string{}
+	unslotted := 0
+	for _, d := range p.Manifest.Actions {
+		if d.Slot == "" {
+			unslotted++
+			if d.Game != "" {
+				add("action %s: a mini game needs a slot", d.ID)
+			}
+			continue
+		}
+		if prev, dup := bySlot[d.Slot]; dup {
+			add("actions %s and %s both use slot %q", prev, d.ID, d.Slot)
+		}
+		bySlot[d.Slot] = d.ID
+		if !minigame.Known(d.Game) {
+			add("action %s: slot %q needs a mini game from the catalog %v", d.ID, d.Slot, minigame.Catalog)
+		}
+	}
+	if len(bySlot) == 0 {
+		return
+	}
+	for _, s := range Slots {
+		if bySlot[s] == "" {
+			add("slotted packs need all three slots %v; %q is missing", Slots, s)
+		}
+	}
+	if unslotted > 0 {
+		add("a slotted pack has only its three slotted actions")
+	}
+	if p.Manifest.SharedActions == nil || len(p.Manifest.SharedActions) > 0 {
+		add(`a slotted pack sets "sharedActions": [] (the three slots replace them)`)
+	}
+	order := make([]string, 0, len(Slots))
+	for _, s := range Slots {
+		if id := bySlot[s]; id != "" {
+			order = append(order, id)
+		}
+	}
+	if len(order) == len(p.Order) {
+		p.Order = order
+	}
 }
 
 func isDefectorAction(id string) bool {

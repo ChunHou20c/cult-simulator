@@ -34,4 +34,6 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint:cult-ids
+      - name: Mini game mirror matches the server
+        run: node --experimental-strip-types scripts/check-minigame.mjs
       - run: npm run build

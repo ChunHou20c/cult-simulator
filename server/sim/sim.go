@@ -11,6 +11,7 @@ import (
 
 	"github.com/cult-simulator/server/content"
 	"github.com/cult-simulator/server/engine"
+	"github.com/cult-simulator/server/minigame"
 )
 
 // Debug, when set, is called with the final state of every simulated Day.
@@ -25,10 +26,14 @@ type Config struct {
 	VisitsMax      int
 	Smart          float64 // share of choices made by the greedy policy
 	Seed           int64
+	// Skill is the bots' average mini game quality (0..1); each bot varies
+	// around it, and SkipRate of rounds are skipped (quality 0.5).
+	Skill    float64
+	SkipRate float64
 }
 
 func DefaultConfig() Config {
-	return Config{PlayersPerCult: 25, VisitsMin: 3, VisitsMax: 7, Smart: 0.8}
+	return Config{PlayersPerCult: 25, VisitsMin: 3, VisitsMax: 7, Smart: 0.8, Skill: 0.65, SkipRate: 0.2}
 }
 
 type bot struct {
@@ -36,6 +41,7 @@ type bot struct {
 	pd       engine.PlayerDay
 	visits   []int64
 	cooldown map[string]int64
+	skill    float64
 	// progressValue remembers how much Progress each action gave last time.
 	progressValue map[string]float64
 }
@@ -68,6 +74,7 @@ func RunDay(c *content.Content, cfg Config) Result {
 	for _, id := range c.Roster {
 		for i := 0; i < cfg.PlayersPerCult; i++ {
 			b := &bot{id: fmt.Sprintf("%s-%d", id, i), cult: id, cooldown: map[string]int64{}, progressValue: map[string]float64{}}
+			b.skill = math.Max(0, math.Min(1, cfg.Skill+rng.NormFloat64()*0.15))
 			b.pd = engine.PlayerDay{UserID: b.id, Name: b.id, Cult: id, Energy: engine.MaxEnergy, EnergyAt: start}
 			n := cfg.VisitsMin + rng.Intn(cfg.VisitsMax-cfg.VisitsMin+1)
 			for v := 0; v < n; v++ {
@@ -115,7 +122,11 @@ func RunDay(c *content.Content, cfg Config) Result {
 		if b.pd.Energy < float64(a.Energy) {
 			continue
 		}
-		r := e.Apply(d, engine.ActionReq{UserID: b.id, Name: b.id, Cult: b.cult, Action: a.ID, At: q.at})
+		req := engine.ActionReq{UserID: b.id, Name: b.id, Cult: b.cult, Action: a.ID, At: q.at}
+		if a.Game != "" {
+			req.Played, req.Quality = true, roundQuality(b, cfg, rng)
+		}
+		r := e.Apply(d, req)
 		if r.OK {
 			if Counts != nil {
 				Counts[a.ID]++
@@ -324,4 +335,12 @@ func BalancePack(c *content.Content, id string, n int, cfg Config) Balance {
 // 60% of runs fall.
 func (b Balance) Pass() bool {
 	return b.Wins > 0 && b.MedianFinish >= 14 && b.MedianFinish <= 22 && b.FallRate <= 0.6
+}
+
+// roundQuality is one bot's mini game result.
+func roundQuality(b *bot, cfg Config, rng *rand.Rand) float64 {
+	if rng.Float64() < cfg.SkipRate {
+		return minigame.SkipQuality
+	}
+	return math.Max(0, math.Min(1, b.skill+rng.NormFloat64()*0.15))
 }

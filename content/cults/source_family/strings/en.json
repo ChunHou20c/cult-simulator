@@ -8,8 +8,10 @@
   "goal.members_profit": "140 members and $50,000 profit",
   "action.run_restaurant": "Run the restaurant",
   "action.run_restaurant.desc": "Serve the Strip. Adds funds and profit.",
-  "action.record_album": "Record an album",
-  "action.record_album.desc": "The house band plays. Recruiting works 1.5x better for 30 minutes, but people start to notice.",
   "codex.fall.scattered": "The real Source Family scattered after Jim Baker died in a hang-gliding accident in Hawaii in August 1975. No one else was hurt; members drifted back to ordinary life over the following years.",
-  "codex.fall.raided": "Neighbours, police and the press closed in, and the commune broke up under the pressure. (Game ending; the real group broke up after its leader's death in 1975.)"
+  "codex.fall.raided": "Neighbours, police and the press closed in, and the commune broke up under the pressure. (Game ending; the real group broke up after its leader's death in 1975.)",
+  "action.recruit": "Invite diners",
+  "action.recruit.desc": "Bring diners from the restaurant into the family. Adds followers and a little scrutiny; opening up eases paranoia.",
+  "action.jam_session": "Jam session",
+  "action.jam_session.desc": "The house band plays all night. Raises loyalty and keeps the family out of sight, with a little paranoia."
 }

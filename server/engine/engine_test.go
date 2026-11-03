@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"math"
 	"testing"
 
 	"github.com/cult-simulator/server/content"
@@ -66,7 +67,7 @@ func TestOnlyOneWinner(t *testing.T) {
 		cs.Stats["loyalty"] = 90
 	}
 	for i, id := range d.Roster {
-		e.Apply(d, ActionReq{UserID: "u", Cult: id, Action: "ritual", At: t0 + int64(i) + 1})
+		e.Apply(d, ActionReq{UserID: "u", Cult: id, Action: "recruit", At: t0 + int64(i) + 1})
 	}
 	won := 0
 	for _, cs := range d.Cults {
@@ -145,5 +146,34 @@ func TestDeterministicReplay(t *testing.T) {
 				t.Fatalf("%s.%s differs: %v vs %v", id, k, v, b.Cults[id].Stats[k])
 			}
 		}
+	}
+}
+
+// A played round scales yield gains by Gain(q) and heat by Heat(q); a skip
+// (q = 0.5) gives the same numbers as an unplayed action.
+func TestQualityScalesGainAndHeat(t *testing.T) {
+	e := load(t)
+	id := firstCult(e)
+	run := func(played bool, q float64) (followers, scrutiny float64) {
+		d := e.NewDay("d", t0, t0+86400, nil)
+		cs := d.Cults[id]
+		f0, s0 := cs.Stats["followers"], cs.Stats["scrutiny"]
+		if r := e.Apply(d, ActionReq{UserID: "u", Cult: id, Action: "recruit", At: t0 + 1, Played: played, Quality: q}); !r.OK {
+			t.Fatalf("recruit refused: %+v", r)
+		}
+		return cs.Stats["followers"] - f0, cs.Stats["scrutiny"] - s0
+	}
+	f, s := run(false, 0)
+	fs, ss := run(true, 0.5)
+	if math.Abs(f-fs) > 1e-9 || math.Abs(s-ss) > 1e-9 {
+		t.Fatalf("skip differs from unplayed: %v/%v vs %v/%v", fs, ss, f, s)
+	}
+	fp, sp := run(true, 1)
+	fm, sm := run(true, 0)
+	if math.Abs(fp-f*1.4) > 1e-9 || math.Abs(fm-f*0.6) > 1e-9 {
+		t.Fatalf("gain: perfect %v miss %v base %v", fp, fm, f)
+	}
+	if math.Abs(sp-s*0.7) > 1e-9 || math.Abs(sm-s*1.3) > 1e-9 {
+		t.Fatalf("heat: perfect %v miss %v base %v", sp, sm, s)
 	}
 }

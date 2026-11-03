@@ -70,11 +70,32 @@ func expectIssue(t *testing.T, change func(string) string, want string) {
 func TestValidatorCatches(t *testing.T) {
 	expectIssue(t, func(s string) string { return strings.Replace(s, `"cult.assets / 30000000"`, `"cult.nonexistent / 3"`, 1) }, "does every stat")
 	expectIssue(t, func(s string) string { return strings.Replace(s, `"open_rehab_house"`, `"poison_the_well"`, 1) }, "care")
-	expectIssue(t, func(s string) string { return strings.Replace(s, `"schema": "1.0"`, `"schema": "1.9"`, 1) }, "engine supports")
+	expectIssue(t, func(s string) string { return strings.Replace(s, `"schema": "1.1"`, `"schema": "1.9"`, 1) }, "engine supports")
 	expectIssue(t, func(s string) string { return strings.Replace(s, `"energy": 2`, `"energy": 9`, 1) }, "schema")
 	expectIssue(t, func(s string) string { return strings.Replace(s, `"cult.scrutiny < 70"`, `"cult.scrutiny + 1"`, 1) }, "must return bool")
 	expectIssue(t, func(s string) string { return strings.Replace(s, `"play_the_game": "sit_talk"`, `"play_cards": "sit_talk"`, 1) }, "not an action of this pack")
 	expectIssue(t, func(s string) string { return strings.Replace(s, `"play_the_game": "sit_talk"`, `"play_the_game": "backflip"`, 1) }, "schema")
+	// The three-button layout.
+	expectIssue(t, func(s string) string { return strings.Replace(s, `"slot": "devote"`, `"slot": "work"`, 1) }, "both use slot")
+	expectIssue(t, func(s string) string { return strings.Replace(s, `"game": "beat"`, `"game": "chess"`, 1) }, "schema")
+	expectIssue(t, func(s string) string { return strings.Replace(s, `"sharedActions": [],`, ``, 1) }, "sharedActions")
+}
+
+func TestSlotOrder(t *testing.T) {
+	c, err := LoadRoster("../../content")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for id, p := range c.Packs {
+		if len(p.Order) != 3 {
+			t.Fatalf("%s: %d actions, want 3", id, len(p.Order))
+		}
+		for i, a := range p.Order {
+			if p.Actions[a].Slot != Slots[i] || p.Actions[a].Game == "" {
+				t.Fatalf("%s: action %d is %s (slot %q game %q)", id, i, a, p.Actions[a].Slot, p.Actions[a].Game)
+			}
+		}
+	}
 }
 
 func TestEmblems(t *testing.T) {

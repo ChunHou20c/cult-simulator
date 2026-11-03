@@ -4,6 +4,7 @@
 // WAIT_RESET=1 and a short DAY_SECONDS) wait for the Day to end and reset.
 import { Client } from "@heroiclabs/nakama-js";
 import { encode, decode } from "@msgpack/msgpack";
+import { layout } from "../apps/web/src/minigame/core.ts";
 
 const host = process.env.NAKAMA_HOST || "127.0.0.1";
 const port = process.env.NAKAMA_PORT || "7350";
@@ -11,7 +12,7 @@ const key = process.env.NAKAMA_SERVER_KEY || "defaultkey";
 const BOTS = Number(process.env.BOTS || 6);
 const waitReset = process.env.WAIT_RESET === "1";
 
-const OP = { MOVE: 1, KNEEL: 2, RISE: 3, RITUAL: 4, ACT: 10, DEFECT_ACT: 11, SNAPSHOT: 20, JOINED: 21, WALK: 23, POSE: 24, CONVERGENCE: 26, ACT_RESULT: 30, WORLD: 31, DAY_ENDED: 33 };
+const OP = { MOVE: 1, KNEEL: 2, RISE: 3, RITUAL: 4, ACT: 10, DEFECT_ACT: 11, ACT_START: 13, ACT_FINISH: 14, SNAPSHOT: 20, JOINED: 21, WALK: 23, POSE: 24, CONVERGENCE: 26, ACT_RESULT: 30, WORLD: 31, DAY_ENDED: 33, ACT_CHALLENGE: 34 };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 let failures = 0;
 const check = (ok, msg) => { console.log(`${ok ? "ok  " : "FAIL"} ${msg}`); if (!ok) failures++; };
@@ -35,6 +36,7 @@ async function bot(i, cultIds) {
     if (m.op_code === OP.WORLD) b.world = data;
     if (m.op_code === OP.SNAPSHOT) b.snapshot = data;
     if (m.op_code === OP.DAY_ENDED) b.ended = data;
+    if (m.op_code === OP.ACT_CHALLENGE) b.challenge = data;
   };
   b.cult = cultIds[i % cultIds.length];
   return b;
@@ -92,6 +94,35 @@ async function main() {
   const after = Object.fromEntries(bots[0].world.cults.map((c) => [c.id, (c.progress || 0) + (c.stats.followers || 0)]));
   check(ids.every((id) => after[id] > before[id]), "every cult's followers rose in the world snapshot");
 
+  // Mini game rounds: the server seeds the round and scores raw inputs.
+  const packs = Object.fromEntries(await Promise.all(ids.map(async (id) => [id, (await rpc(probe, s0, "get_pack", { id })).manifest])));
+  const devote = (b) => packs[b.cult].actions.find((a) => a.slot === "devote");
+  check(ids.every((id) => packs[id].actions.filter((a) => a.slot).length === 3), "every pack has three slotted actions");
+  const startRound = async (b, seq) => {
+    b.challenge = null;
+    b.socket.sendMatchState(b.matchId, OP.ACT_START, encode({ actionId: devote(b).id, clientSeq: seq }));
+    await sleep(700);
+    return b.challenge;
+  };
+  const [p1, p2, p3] = [bots[1], bots[2], bots[3 % BOTS]];
+  const c1 = await startRound(p1, 300);
+  check(c1 && c1.game === devote(p1).game && c1.nonce, `round handed out: ${c1?.game} seed ${c1?.seed}`);
+  const c2 = await startRound(p2, 301);
+  const forged = layout(c2.game, c2.seed);
+  // p2 claims perfect beats at once: the inputs are later than the server's clock allows.
+  p2.socket.sendMatchState(p2.matchId, OP.ACT_FINISH, encode({ nonce: c2.nonce, inputs: (forged.beats ?? [0]).map((t) => ({ t })) }));
+  const c3 = await startRound(p3, 302);
+  const l1 = layout(c1.game, c1.seed);
+  await sleep(l1.lengthMs);
+  p1.socket.sendMatchState(p1.matchId, OP.ACT_FINISH, encode({ nonce: c1.nonce, inputs: l1.beats.map((t) => ({ t })) }));
+  await sleep(1500);
+  const r1 = p1.results.find((r) => r.clientSeq === 300), r2 = p2.results.find((r) => r.clientSeq === 301);
+  check(r1?.ok && r1.quality === 1 && r1.grades?.every((g) => g === 1), `perfect round scored ${r1?.quality} (${r1?.grades})`);
+  check(r2?.ok && r2.quality === 0.5, `forged-clock round scored as a skip: ${r2?.quality}`);
+  await sleep(15500);
+  const r3 = p3.results.find((r) => r.clientSeq === 302);
+  check(r3?.ok && r3.quality === 0.5, `unfinished round expired as a skip: ${r3?.quality}`);
+
   // Defect, then a defector action (uses the last energy points).
   const d = await rpc(b0.client, b0.session, "defect");
   check(d.defected === true, "defect after 10 actions");
@@ -103,7 +134,7 @@ async function main() {
   check(b0.results.some((r) => r.clientSeq === 201 && r.reason === "defected"), "a defector cannot act for the cult");
 
   // Energy runs out (cooldown on gather is 20 s, so use the journalist refusal and energy).
-  for (let k = 0; k < 3; k++) peer.socket.sendMatchState(peer.matchId, OP.ACT, encode({ actionId: "ritual", clientSeq: 300 + k }));
+  for (let k = 0; k < 3; k++) peer.socket.sendMatchState(peer.matchId, OP.ACT, encode({ actionId: "recruit", clientSeq: 400 + k }));
   await sleep(1500);
   check(peer.results.some((r) => r.reason === "no_energy"), "out of energy is refused");
   const w = await rpc(b0.client, b0.session, "get_day");
