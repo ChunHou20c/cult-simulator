@@ -1,5 +1,7 @@
 // Background music: one looping track for the lobby and one per cult room.
-// Files live in public/music/<id>.m4a (built by scripts/build-music.sh).
+// Files live in public/music/<cult id>.m4a and lobby.m4a (built by
+// scripts/build-music.sh). Nothing here names a cult: a cult without its own
+// file falls back to the lobby track.
 // Browsers block sound until the first tap, so playback starts on the first
 // pointer or key press. Muting is remembered per browser.
 import { useSyncExternalStore } from "react";
@@ -8,7 +10,8 @@ import { useStore } from "./store";
 const KEY = "cs.music";
 const VOLUME = 0.35;
 const FADE_MS = 800;
-const TRACKS = new Set(["lobby", "source_family", "synanon", "rajneeshpuram"]);
+const LOBBY = "lobby";
+const missing = new Set<string>(); // tracks that failed to load
 
 const listeners = new Set<() => void>();
 let muted = readMuted();
@@ -51,7 +54,18 @@ function sync() {
   if (playing !== wanted) {
     const next = wanted!;
     const start = () => {
-      audio ??= Object.assign(new Audio(), { loop: true, preload: "auto" });
+      if (!audio) {
+        audio = Object.assign(new Audio(), { loop: true, preload: "auto" });
+        audio.addEventListener("error", () => {
+          // No file for this cult (or it failed): use the lobby track instead.
+          const id = decodeURIComponent(audio!.src.split("/").pop() ?? "").replace(/\.m4a$/, "");
+          if (!id || id === LOBBY) return;
+          missing.add(id);
+          if (playing === id) playing = null;
+          if (wanted === id) wanted = LOBBY;
+          sync();
+        });
+      }
       audio.src = `/music/${next}.m4a`;
       audio.volume = 0;
       playing = next;
@@ -67,7 +81,7 @@ function sync() {
 function trackFor(s: ReturnType<typeof useStore.getState>): string | null {
   if (s.screen === "gate") return null;
   const cult = s.screen === "compound" ? s.player?.cult : undefined;
-  return cult && TRACKS.has(cult) ? cult : "lobby";
+  return cult && !missing.has(cult) ? cult : LOBBY;
 }
 
 export function initMusic() {
