@@ -8,14 +8,20 @@ import { Archive, Codex, EndCard, SummaryView } from "./components/EndScreens";
 function Gate() {
   const { error } = useStore();
   const [busy, setBusy] = useState(false);
+  const [help, setHelp] = useState(false);
   return (
     <main className="gate">
       <h1>Cult Simulator</h1>
-      <p className="muted">One shared world a day. Pick a cult, move its numbers with everyone else, and see how it ends.</p>
-      <p className="small muted">Every cult here was real. Their tragedies are shown as losses, never as rewards.</p>
       <button className="primary big" disabled={busy && !error} onClick={() => { setBusy(true); start(); }}>
         {busy && !error ? "Entering…" : "Enter"}
       </button>
+      <p><button className={`round help-toggle ${help ? "on" : ""}`} aria-label="What is this?" aria-expanded={help} onClick={() => setHelp(!help)}>?</button></p>
+      {help && (
+        <>
+          <p className="muted">One shared world a day. Pick a cult, move its numbers with everyone else, and see how it ends.</p>
+          <p className="small muted">Every cult here was real. Their tragedies are shown as losses, never as rewards.</p>
+        </>
+      )}
       {error && <p className="error">{error}</p>}
     </main>
   );
