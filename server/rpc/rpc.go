@@ -408,7 +408,7 @@ type packIn struct {
 	ID string `json:"id"`
 }
 
-// getPack serves a live pack's manifest, strings, compound and codex, for
+// getPack serves a live pack's manifest, strings, compound, codex and emblem, for
 // clients when no asset host is configured. Only packs in today's roster.
 func getPack(ctx context.Context, logger runtime.Logger, db *sql.DB, nk runtime.NakamaModule, payload string) (string, error) {
 	var in packIn
@@ -431,9 +431,11 @@ func getPack(ctx context.Context, logger runtime.Logger, db *sql.DB, nk runtime.
 		return b
 	}
 	codex, _ := os.ReadFile(filepath.Join(p.Dir, "codex", "en.md"))
+	emblem, _ := os.ReadFile(filepath.Join(p.Dir, "emblem.svg")) // optional; checked at load
 	return out(map[string]any{
 		"id": p.Manifest.ID, "hash": p.Hash, "manifest": read("manifest.json"),
 		"strings": read("strings/en.json"), "compound": p.Compound, "codex": string(codex),
+		"emblem": string(emblem),
 		"actions": p.Order,
 	})
 }

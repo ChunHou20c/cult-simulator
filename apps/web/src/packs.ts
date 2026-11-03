@@ -31,6 +31,8 @@ export interface Pack {
   compound: CompoundLayout;
   codex: string;
   actions: string[]; // display order: enabled shared actions, then signature actions
+  /** The cult's symbol as a data: URL (so WebGL can use it from any asset host), if the pack has one. */
+  emblem?: string;
 }
 
 export interface PackInfo { id: string; version: string; schema: string; hash: string; url: string; difficulty: string }
@@ -50,24 +52,30 @@ export async function loadPack(info: PackInfo): Promise<Pack> {
   if (hit) return hit;
   let pack: Pack;
   if (info.url) {
-    const [manifest, strings, compound, codex] = await Promise.all([
+    const text = (rel: string) => fetch(info.url + rel).then((r) => (r.ok ? r.text() : "")).catch(() => "");
+    const [manifest, strings, compound, codex, emblem] = await Promise.all([
       fetchJSON(info.url + "manifest.json"),
       fetchJSON(info.url + "strings/en.json"),
       fetchJSON(info.url + "compound.json").catch(() => null),
-      fetch(info.url + "codex/en.md").then((r) => (r.ok ? r.text() : "")),
+      text("codex/en.md"),
+      text("emblem.svg"),
     ]);
     const shared = (manifest.sharedActions ?? SHARED) as string[];
     pack = {
-      id: info.id, hash: info.hash, manifest, strings, codex,
+      id: info.id, hash: info.hash, manifest, strings, codex, emblem: svgURL(emblem),
       compound: compound ?? defaultCompound(),
       actions: [...SHARED.filter((a) => shared.includes(a)), ...manifest.actions.map((a: ActionDef) => a.id)],
     };
   } else {
     const r = await rpc<any>("get_pack", { id: info.id });
-    pack = { id: r.id, hash: r.hash, manifest: r.manifest, strings: r.strings, compound: r.compound, codex: r.codex, actions: r.actions };
+    pack = { id: r.id, hash: r.hash, manifest: r.manifest, strings: r.strings, compound: r.compound, codex: r.codex, actions: r.actions, emblem: svgURL(r.emblem) };
   }
   cache.set(key, pack);
   return pack;
+}
+
+function svgURL(svg: string | undefined): string | undefined {
+  return svg && svg.trimStart().startsWith("<svg") ? "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg) : undefined;
 }
 
 function defaultCompound(): CompoundLayout {

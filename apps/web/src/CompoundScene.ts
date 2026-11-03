@@ -1,8 +1,9 @@
 // The compound canvas: one PixiJS scene for the room. Drawn from the
 // pack's compound layout and theme colours, so any cult renders.
-import { Application, Container, Graphics, Text, FederatedPointerEvent } from "pixi.js";
+import { Application, Container, Graphics, Sprite, Text, Texture, FederatedPointerEvent } from "pixi.js";
 import { useStore, S, type Avatar } from "./store";
 import { avatarPos, kneel, walkTo } from "./game";
+import { emblemCanvas } from "./emblem";
 
 const hex = (s: string | undefined, fallback: number) => (s ? parseInt(s.slice(1), 16) : fallback);
 
@@ -15,6 +16,7 @@ export class CompoundScene {
   kneelTarget: string | null = null;
   unsub?: () => void;
   ready = false;
+  roomId = 0; // bumps on each redraw, so a late emblem never lands in an old room
   destroyed = false;
 
   async mount(el: HTMLElement) {
@@ -63,6 +65,17 @@ export class CompoundScene {
     // A low dais at the top for the leader's empty seat.
     this.mats.addChild(new Graphics().roundRect(L.width / 2 - 120, 40, 240, 70, 16).fill({ color: th.primary, alpha: 0.35 }));
     this.mats.addChild(new Graphics().circle(L.width / 2, 75, 18).fill({ color: th.accent, alpha: 0.8 }));
+    // The cult's emblem over the seat, once it has loaded.
+    const id = ++this.roomId;
+    const pack = st.player ? st.packs[st.player.cult] : undefined;
+    emblemCanvas(pack?.emblem, 128).then((c) => {
+      if (!c || id !== this.roomId || this.destroyed) return;
+      const sp = new Sprite(Texture.from(c));
+      sp.anchor.set(0.5);
+      sp.width = sp.height = 54;
+      sp.position.set(L.width / 2, 75);
+      this.mats.addChildAt(sp, 3);
+    });
     for (const m of L.mats) {
       const g = new Graphics().roundRect(m.x - 30, m.y - 20, 60, 40, 10).fill({ color: th.primary, alpha: 0.55 }).stroke({ color: th.accent, alpha: 0.35, width: 2 });
       this.mats.addChild(g);

@@ -3,6 +3,7 @@ import { rpc } from "../net";
 import { t } from "../packs";
 import { cultView, useStore } from "../store";
 import { refreshDay } from "../game";
+import { Emblem } from "./widgets";
 
 const HELP = "https://www.icsahome.com/";
 
@@ -25,6 +26,7 @@ export function EndCard() {
   return (
     <main className="end">
       <div className="end-card" style={{ borderColor: pack?.manifest.theme?.accent }}>
+        <Emblem pack={pack} size={56} className="end-emblem" />
         <p className="muted small">Day {dayId}</p>
         <h1>{dayEnded?.reset && !sameDay ? "The Day is over" : cult?.status === "won" ? `${t(pack, "name")} reached its goal` : cult && cult.status !== "standing" ? `${t(pack, "name")} has ended` : "The Day is over"}</h1>
         {sameDay && cult?.fallText && (

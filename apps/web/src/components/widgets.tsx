@@ -69,3 +69,9 @@ export function statusLabel(c: CultView): string {
     default: return "Standing";
   }
 }
+
+/** A cult's symbol from its pack, or nothing if the pack has none. Decorative: the name is always shown next to it. */
+export function Emblem({ pack, size = 20, className = "" }: { pack?: Pack; size?: number; className?: string }) {
+  if (!pack?.emblem) return null;
+  return <img className={`emblem ${className}`} src={pack.emblem} width={size} height={size} alt="" aria-hidden="true" draggable={false} />;
+}

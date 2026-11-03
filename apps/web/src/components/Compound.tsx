@@ -3,7 +3,7 @@ import { CompoundScene } from "../CompoundScene";
 import { act, backToLobby, defect, ritual, rise, switchCult } from "../game";
 import { actionDef, DEFECTOR_ACTIONS, t } from "../packs";
 import { cultView, energyNow, useStore } from "../store";
-import { Countdown, ProgressBar, StatList, useNow } from "./widgets";
+import { Countdown, Emblem, ProgressBar, StatList, useNow } from "./widgets";
 import { Ticker } from "./Ticker";
 import { canUse3D, setView, useView, type View } from "../view";
 
@@ -100,7 +100,7 @@ export function Compound() {
       <header className="hud-top">
         <button className="round" onClick={() => backToLobby()} aria-label="Back to the lobby">←</button>
         <div className="chip" aria-label={`${t(pack, "name")}, ${Math.round((cult.progress ?? 0) * 100)}% of the goal`}>
-          <span className="chip-name">{t(pack, "name")}</span>
+          <span className="chip-name"><Emblem pack={pack} size={18} />{t(pack, "name")}</span>
           <ProgressBar value={cult.progress ?? 0} color={pack.manifest.theme?.accent} label="Progress" />
         </div>
         <div className="energy" aria-label={`Energy ${energy} of ${engine.maxEnergy}`}>
@@ -136,7 +136,7 @@ export function Compound() {
           <h3>Rivals</h3>
           {world.cults.filter((c) => c.id !== player.cult).map((c) => (
             <div key={c.id} className="rival">
-              <span>{t(packs[c.id], "name")}</span>
+              <span className="rival-name"><Emblem pack={packs[c.id]} size={16} />{t(packs[c.id], "name")}</span>
               <ProgressBar value={c.progress ?? 0} color={packs[c.id]?.manifest.theme?.accent} />
             </div>
           ))}

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { pickCult, enterCompound } from "../game";
 import { t } from "../packs";
 import { useStore } from "../store";
-import { Countdown, ProgressBar, statusLabel } from "./widgets";
+import { Countdown, Emblem, ProgressBar, statusLabel } from "./widgets";
 import { Ticker } from "./Ticker";
 
 export function Lobby() {
@@ -51,6 +51,7 @@ export function Lobby() {
           return (
             <article key={c.id} className={`card ${c.status}`} style={{ borderColor: theme.primary }}>
               <div className="card-art" style={{ background: `linear-gradient(135deg, ${theme.primary ?? "#555"}, ${theme.floor ?? "#222"})` }}>
+                <Emblem pack={pack} size={64} className="card-emblem" />
                 <span className="diff">{pack?.manifest.difficulty}</span>
               </div>
               <div className="card-head">
