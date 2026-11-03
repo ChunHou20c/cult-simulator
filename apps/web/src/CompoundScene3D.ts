@@ -7,6 +7,7 @@ import { useStore, S, type Avatar } from "./store";
 import { avatarPos, kneel, walkTo } from "./game";
 import { Figures, loadModel, type Figure } from "./Figure";
 import { clipFor } from "./anim";
+import { emblemCanvas } from "./emblem";
 
 // Camera angle down from horizontal: steeper on portrait screens, so the
 // room uses the tall screen instead of leaving empty sky and ground.
@@ -59,6 +60,7 @@ export class CompoundScene3D {
   lastFrame = performance.now();
   figures = new Figures();
   accent = new THREE.Color(0xe0b44c); // your own figure's colour, from the pack theme
+  roomId = 0; // bumps on each rebuild, so a late emblem never lands in an old room
   // Shared geometry: one of each, reused by every avatar.
   geo = {
     shadow: new THREE.CircleGeometry(16, 24),
@@ -161,10 +163,13 @@ export class CompoundScene3D {
       this.room.remove(c);
       c.traverse((o) => {
         (o as THREE.Mesh).geometry?.dispose();
-        ((o as THREE.Mesh).material as THREE.Material | undefined)?.dispose();
+        const mat = (o as THREE.Mesh).material as THREE.MeshBasicMaterial | undefined;
+        mat?.map?.dispose();
+        mat?.dispose();
       });
     }
     this.matHits = [];
+    const id = ++this.roomId;
     if (!L) return;
     const th = this.theme();
     this.accent = th.accent;
@@ -218,6 +223,24 @@ export class CompoundScene3D {
       f.position.set(x, 31, 104);
       this.room.add(c, f);
     }
+
+    // A banner on the back wall behind the dais, carrying the cult's emblem.
+    const banner = new THREE.Mesh(new THREE.PlaneGeometry(110, 104), std(th.primary.clone().multiplyScalar(0.35)));
+    banner.position.set(W / 2, 58, 1);
+    const rod = new THREE.Mesh(new THREE.CylinderGeometry(2.5, 2.5, 124, 8), std(th.accent, { metalness: 0.4, roughness: 0.5 }));
+    rod.rotation.z = Math.PI / 2;
+    rod.position.set(W / 2, 111, 3);
+    this.room.add(banner, rod);
+    const st = S();
+    emblemCanvas(st.player ? st.packs[st.player.cult]?.emblem : undefined, 256).then((c) => {
+      if (!c || id !== this.roomId || this.destroyed) return;
+      const tex = new THREE.CanvasTexture(c);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.anisotropy = 4;
+      const emblem = new THREE.Mesh(new THREE.PlaneGeometry(84, 84), new THREE.MeshBasicMaterial({ map: tex, transparent: true }));
+      emblem.position.set(W / 2, 60, 2);
+      this.room.add(emblem);
+    });
 
     // Mats: low cushions, with a larger invisible box for easy tapping.
     const matGeo = new THREE.BoxGeometry(60, 6, 40);

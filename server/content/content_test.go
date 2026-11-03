@@ -76,3 +76,31 @@ func TestValidatorCatches(t *testing.T) {
 	expectIssue(t, func(s string) string { return strings.Replace(s, `"play_the_game": "sit_talk"`, `"play_cards": "sit_talk"`, 1) }, "not an action of this pack")
 	expectIssue(t, func(s string) string { return strings.Replace(s, `"play_the_game": "sit_talk"`, `"play_the_game": "backflip"`, 1) }, "schema")
 }
+
+func TestEmblems(t *testing.T) {
+	for _, id := range []string{"source_family", "synanon", "rajneeshpuram"} {
+		b, err := os.ReadFile(filepath.Join("../../content/cults", id, "emblem.svg"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if msg := checkEmblem(b); msg != "" {
+			t.Errorf("%s: %s", id, msg)
+		}
+	}
+	bad := map[string]string{
+		`<svg viewBox="0 0 1 1"><script>x()</script></svg>`:                 "outside",
+		`<svg viewBox="0 0 1 1" onload="x()"></svg>`:                        "outside",
+		`<svg viewBox="0 0 1 1"><image href="https://e.com/a.png"/></svg>`:  "outside",
+		`<svg viewBox="0 0 1 1"><rect fill="url(http://e.com/#a)"/></svg>`: "outside",
+		`<svg width="1"></svg>`:  "viewBox",
+		`<html></html>`:          "single",
+	}
+	for in, want := range bad {
+		if msg := checkEmblem([]byte(in)); !strings.Contains(msg, want) {
+			t.Errorf("%s: got %q, want %q", in, msg, want)
+		}
+	}
+	if msg := checkEmblem([]byte(`<svg viewBox="0 0 1 1"><rect fill="url(#g)"/></svg>`)); msg != "" {
+		t.Errorf("local url() refused: %s", msg)
+	}
+}

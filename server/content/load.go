@@ -312,6 +312,14 @@ func (l *Loader) LoadPack(dir string) (*Pack, error) {
 		}
 	}
 
+	// Emblem (optional): the cult's symbol, shown in the lobby, the HUD and
+	// the room. Clients render it as an image, so it must be plain, static SVG.
+	if b, err := os.ReadFile(filepath.Join(dir, "emblem.svg")); err == nil {
+		if msg := checkEmblem(b); msg != "" {
+			add("emblem.svg: %s", msg)
+		}
+	}
+
 	// Strings (English is required at launch).
 	if b, err := os.ReadFile(filepath.Join(dir, "strings", "en.json")); err != nil {
 		add("strings/en.json missing: %v", err)
@@ -494,6 +502,29 @@ func careLint(p *Pack, add func(string, ...any)) {
 // HashDir hashes every file under dir: sha256 over "path\0bytes\0" for each
 // file in sorted path order, first 12 hex chars. The web build computes the
 // same hash so asset URLs match.
+// MaxEmblemBytes keeps emblems simple: a symbol, not an illustration.
+const MaxEmblemBytes = 16 << 10
+
+var emblemBad = regexp.MustCompile(`(?i)<script|<foreignObject|\son[a-z]+\s*=|javascript:|(?:xlink:)?href\s*=\s*["'](?:[a-z]+:|//)|url\(\s*["']?(?:[a-z]+:|//)|@import`)
+
+// checkEmblem returns why an emblem is unusable, or "" if it is fine.
+func checkEmblem(b []byte) string {
+	if len(b) > MaxEmblemBytes {
+		return fmt.Sprintf("%d bytes, over the %d byte limit", len(b), MaxEmblemBytes)
+	}
+	s := strings.TrimSpace(string(b))
+	if !strings.HasPrefix(s, "<svg") || !strings.HasSuffix(s, "</svg>") {
+		return "must be a single <svg> element"
+	}
+	if !strings.Contains(s, "viewBox=") {
+		return "needs a viewBox so it scales"
+	}
+	if m := emblemBad.FindString(s); m != "" {
+		return fmt.Sprintf("no scripts, handlers or outside references (found %q)", m)
+	}
+	return ""
+}
+
 func HashDir(dir string) (string, error) {
 	var files []string
 	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
