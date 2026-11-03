@@ -92,7 +92,8 @@ interface State {
   round?: Round;
   lastResult?: { action: string; ok: boolean; reason?: string; deltas?: Record<string, number>; quality?: number; grades?: number[]; at: number };
   convergence?: { key: string; at: number };
-  dayEnded?: { dayId: string; reason?: string; winner?: string; reset?: boolean };
+  /** The Day that just ended; cult is this player's cult's final state when the next Day already opened. */
+  dayEnded?: { dayId: string; reason?: string; winner?: string; reset?: boolean; cult?: CultView };
   summaryDay?: string;
   codexCult?: string;
   set: (p: Partial<State>) => void;
