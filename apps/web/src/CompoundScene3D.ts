@@ -5,26 +5,28 @@
 import * as THREE from "three";
 import { useStore, S, type Avatar } from "./store";
 import { avatarPos, kneel, walkTo } from "./game";
+import { Figures, loadModel, type Figure } from "./Figure";
+import { clipFor } from "./anim";
 
 // Camera angle down from horizontal: steeper on portrait screens, so the
 // room uses the tall screen instead of leaving empty sky and ground.
 const TILT_WIDE = THREE.MathUtils.degToRad(52);
 const TILT_TALL = THREE.MathUtils.degToRad(66);
 const FOV = 38;
-const AVATAR_H = 52; // standing height, floor units
 const WALL_H = 120;
 
 type Sprite = {
   root: THREE.Group;
-  body: THREE.Mesh;
-  head: THREE.Mesh;
+  fig: Figure;
   label: THREE.Sprite;
-  mat: THREE.MeshStandardMaterial;
   last: [number, number];
   facing: number;
-  kneel: number; // 0 standing .. 1 kneeling, eased
+  seenAct?: number; // the last action / ritual movement started, by its time
+  seenRitual?: number;
 };
 
+const CREAM = new THREE.Color(0xefe6d6);
+const GREY = new THREE.Color(0x8c8c8c);
 const color = (s: string | undefined, fallback: number) => new THREE.Color(s ? parseInt(s.slice(1), 16) : fallback);
 
 export class CompoundScene3D {
@@ -49,10 +51,12 @@ export class CompoundScene3D {
   unsub?: () => void;
   raf = 0;
   down?: { x: number; y: number };
+  destroyed = false;
+  lastFrame = performance.now();
+  figures = new Figures();
+  accent = new THREE.Color(0xe0b44c); // your own figure's colour, from the pack theme
   // Shared geometry: one of each, reused by every avatar.
   geo = {
-    body: new THREE.CapsuleGeometry(11, 24, 4, 12),
-    head: new THREE.SphereGeometry(8, 16, 12),
     shadow: new THREE.CircleGeometry(16, 24),
     ring: new THREE.RingGeometry(0.82, 1, 48),
   };
@@ -89,6 +93,19 @@ export class CompoundScene3D {
       if (s.avatars !== prev.avatars) this.syncAvatars();
     });
     this.syncAvatars();
+    // Swap the capsules for the rigged figure once it has loaded.
+    loadModel()
+      .then((m) => {
+        if (this.destroyed) return;
+        this.figures.model = m;
+        for (const sp of this.sprites.values()) {
+          sp.root.remove(sp.fig.object);
+          sp.fig.dispose();
+          sp.fig = this.figures.make(CREAM);
+          sp.root.add(sp.fig.object);
+        }
+      })
+      .catch(() => {});
     const loop = () => {
       this.raf = requestAnimationFrame(loop);
       this.frame();
@@ -97,7 +114,9 @@ export class CompoundScene3D {
   }
 
   destroy() {
+    this.destroyed = true;
     cancelAnimationFrame(this.raf);
+    for (const sp of this.sprites.values()) sp.fig.dispose();
     this.unsub?.();
     this.ro?.disconnect();
     const r = this.renderer;
@@ -112,6 +131,7 @@ export class CompoundScene3D {
       else mat?.dispose();
       (mat as THREE.SpriteMaterial | undefined)?.map?.dispose();
     });
+    this.figures.dispose();
     r.dispose();
     r.domElement.remove();
   }
@@ -137,6 +157,7 @@ export class CompoundScene3D {
     this.matHits = [];
     if (!L) return;
     const th = this.theme();
+    this.accent = th.accent;
     const W = L.width, H = L.height;
     const std = (c: THREE.Color, extra: THREE.MeshStandardMaterialParameters = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.9, ...extra });
 
@@ -277,11 +298,10 @@ export class CompoundScene3D {
 
   syncAvatars() {
     const st = S();
-    const th = this.theme();
     for (const [id, sp] of this.sprites) {
       if (!st.avatars[id]) {
         this.people.remove(sp.root);
-        sp.mat.dispose();
+        sp.fig.dispose();
         sp.label.material.map?.dispose();
         sp.label.material.dispose();
         this.sprites.delete(id);
@@ -297,21 +317,24 @@ export class CompoundScene3D {
       let sp = this.sprites.get(a.id);
       if (!sp) {
         const root = new THREE.Group();
-        const mat = new THREE.MeshStandardMaterial({ roughness: 0.7 });
-        const body = new THREE.Mesh(this.geo.body, mat);
-        const head = new THREE.Mesh(this.geo.head, mat);
+        const fig = this.figures.make(this.tintOf(a));
         const shadow = new THREE.Mesh(this.geo.shadow, this.shadowMat);
         shadow.rotation.x = -Math.PI / 2;
         shadow.position.y = 0.6;
         const label = this.labelSprite(a.name, a.id === st.you);
-        root.add(shadow, body, head, label);
+        root.add(shadow, fig.object, label);
         this.people.add(root);
         const [x, y] = avatarPos(a, Date.now() + st.clockSkew);
-        sp = { root, body, head, label, mat, last: [x, y], facing: 0, kneel: a.pose === "kneel" ? 1 : 0 };
+        // Movements already over when we arrive are not replayed.
+        sp = { root, fig, label, last: [x, y], facing: 0, seenAct: a.act?.at, seenRitual: a.ritual?.at };
         this.sprites.set(a.id, sp);
       }
-      sp.mat.color.copy(a.defected ? new THREE.Color(0x8c8c8c) : a.id === st.you ? th.accent : new THREE.Color(0xefe6d6));
     }
+  }
+
+  tintOf(a: Avatar): THREE.Color {
+    if (a.defected) return GREY;
+    return a.id === S().you ? this.accent : CREAM;
   }
 
   frame() {
@@ -320,27 +343,35 @@ export class CompoundScene3D {
     const L = st.layout;
     if (!r || !L) return;
     const now = Date.now() + st.clockSkew;
-    const t = performance.now() / 1000;
+    const pnow = performance.now();
+    const dt = Math.min(0.1, (pnow - this.lastFrame) / 1000);
+    this.lastFrame = pnow;
+    const manifest = st.player ? st.packs[st.player.cult]?.manifest : undefined;
     for (const a of Object.values(st.avatars)) {
       const sp = this.sprites.get(a.id);
       if (!sp) continue;
       const [x, y] = avatarPos(a, now);
       const dx = x - sp.last[0], dy = y - sp.last[1];
       const moving = Math.hypot(dx, dy) > 0.05;
+      const kneeling = a.pose === "kneel" && !moving;
       if (moving) sp.facing = Math.atan2(dx, dy);
+      else if (kneeling) sp.facing = Math.PI; // kneel facing the dais
       sp.last = [x, y];
       sp.root.position.set(x, 0, y);
-      sp.root.rotation.y = sp.facing;
-      // Ease between standing and kneeling.
-      const goal = a.pose === "kneel" ? 1 : 0;
-      sp.kneel += (goal - sp.kneel) * 0.15;
-      const k = sp.kneel;
-      const bob = moving ? Math.abs(Math.sin(t * 10)) * 3 : 0;
-      sp.body.position.y = 23 - k * 11 + bob;
-      sp.body.scale.set(1, 1 - k * 0.35, 1);
-      sp.body.rotation.x = k * 0.25;
-      sp.head.position.set(0, AVATAR_H - 6 - k * 18 + bob, k * 4);
-      sp.label.position.set(0, AVATAR_H + 14 - k * 18, 0);
+      // Turn smoothly rather than snapping.
+      const turn = Math.atan2(Math.sin(sp.facing - sp.root.rotation.y), Math.cos(sp.facing - sp.root.rotation.y));
+      sp.root.rotation.y += turn * Math.min(1, dt * 12);
+      // A new action or ritual from this player: play its movement.
+      if (a.act && a.act.at !== sp.seenAct) {
+        sp.seenAct = a.act.at;
+        sp.fig.play(clipFor(a.act.id, manifest));
+      }
+      if (a.ritual && a.ritual.at !== sp.seenRitual) {
+        sp.seenRitual = a.ritual.at;
+        sp.fig.play(clipFor("ritual." + a.ritual.id, manifest));
+      }
+      sp.fig.update(dt, { moving, kneel: kneeling, tint: this.tintOf(a) });
+      sp.label.position.set(0, sp.fig.headY() + 14, 0);
       this.ritualRing(a);
     }
 

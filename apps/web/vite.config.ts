@@ -23,6 +23,12 @@ export default defineConfig({
         globIgnores: ["packs/**", "config.js"],
         runtimeCaching: [
           {
+            // 3D models: fetched on first 3D visit, then served offline.
+            urlPattern: ({ url }) => url.pathname.startsWith("/models/"),
+            handler: "CacheFirst",
+            options: { cacheName: "models", expiration: { maxEntries: 20 } },
+          },
+          {
             urlPattern: ({ url }) => url.pathname.startsWith("/packs/"),
             handler: "CacheFirst",
             options: { cacheName: "packs", expiration: { maxEntries: 200 } },

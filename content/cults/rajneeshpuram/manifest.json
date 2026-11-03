@@ -1,7 +1,7 @@
 {
   "schema": "1.0",
   "id": "rajneeshpuram",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "difficulty": "medium",
   "names": "real",
   "theme": {
@@ -91,5 +91,10 @@
       "text": "codex.fall.the_dalles",
       "historical": true
     }
-  ]
+  ],
+  "animations": {
+    "build_on_ranch": "fix",
+    "host_festival": "dance",
+    "ritual": "dance"
+  }
 }

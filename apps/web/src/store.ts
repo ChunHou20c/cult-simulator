@@ -56,6 +56,7 @@ export interface Avatar {
   mat?: string;
   defected?: boolean;
   ritual?: { id: string; at: number };
+  act?: { id: string; at: number }; // last action seen in the room (3D movement)
 }
 
 export interface EngineInfo { maxEnergy: number; refillSec: number; defectMinActions: number; evidenceForJournalist: number; roomSize: number }

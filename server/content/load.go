@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/cult-simulator/server/protocol"
 	"github.com/santhosh-tekuri/jsonschema/v5"
 )
 
@@ -408,6 +409,13 @@ func semanticLint(p *Pack, phaseIDs map[string]bool, add func(string, ...any)) {
 		}
 	}
 	effects("tick", p.Tick)
+	for key := range p.Manifest.Animations {
+		_, action := p.Actions[key]
+		ritual := strings.HasPrefix(key, "ritual.") && protocol.Rituals[strings.TrimPrefix(key, "ritual.")]
+		if !action && !ritual && !isDefectorAction(key) {
+			add("animations: %q is not an action of this pack or a ritual", key)
+		}
+	}
 	for _, f := range p.Falls {
 		chk("fall "+f.Reason, f.When)
 		if !strings.HasPrefix(f.Text, "core.") {

@@ -1,7 +1,7 @@
 {
   "schema": "1.0",
   "id": "source_family",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "difficulty": "tutorial",
   "names": "real",
   "theme": {
@@ -89,5 +89,9 @@
       "reason": "raided",
       "text": "codex.fall.raided"
     }
-  ]
+  ],
+  "animations": {
+    "run_restaurant": "carry",
+    "record_album": "dance"
+  }
 }
