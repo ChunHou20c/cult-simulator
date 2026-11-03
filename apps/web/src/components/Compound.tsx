@@ -3,7 +3,7 @@ import { CompoundScene } from "../CompoundScene";
 import { act, backToLobby, defect, ritual, rise, switchCult } from "../game";
 import { actionDef, DEFECTOR_ACTIONS, t } from "../packs";
 import { cultView, energyNow, useStore } from "../store";
-import { Countdown, Emblem, ProgressBar, StatList, useNow } from "./widgets";
+import { Countdown, Emblem, MusicButton, ProgressBar, StatList, useNow } from "./widgets";
 import { Ticker } from "./Ticker";
 import { canUse3D, setView, useView, type View } from "../view";
 
@@ -107,6 +107,7 @@ export function Compound() {
           {Array.from({ length: engine.maxEnergy }, (_, i) => <span key={i} className={`pip ${i < energy ? "on" : ""}`} />)}
           <span className="energy-num mono" aria-hidden="true">{energy}⚡</span>
         </div>
+        <MusicButton />
         <button className={`round ${help ? "on" : ""}`} onClick={() => setHelp(!help)} aria-label={help ? "Hide help" : "Show help"} aria-expanded={help}>?</button>
       </header>
 

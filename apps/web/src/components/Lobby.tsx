@@ -2,7 +2,7 @@ import { useState } from "react";
 import { pickCult, enterCompound } from "../game";
 import { t } from "../packs";
 import { useStore } from "../store";
-import { Countdown, Emblem, ProgressBar, statusLabel } from "./widgets";
+import { Countdown, Emblem, MusicButton, ProgressBar, statusLabel } from "./widgets";
 import { Ticker } from "./Ticker";
 
 export function Lobby() {
@@ -36,6 +36,7 @@ export function Lobby() {
         </div>
         <nav className="links">
           <button className="link" onClick={() => set({ screen: "archive" })}>Past Days</button>
+          <MusicButton />
         </nav>
       </header>
       {!live && (
