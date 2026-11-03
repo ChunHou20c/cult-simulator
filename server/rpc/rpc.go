@@ -431,11 +431,13 @@ func getPack(ctx context.Context, logger runtime.Logger, db *sql.DB, nk runtime.
 		return b
 	}
 	codex, _ := os.ReadFile(filepath.Join(p.Dir, "codex", "en.md"))
-	emblem, _ := os.ReadFile(filepath.Join(p.Dir, "emblem.svg")) // optional; checked at load
+	emblem, _ := os.ReadFile(filepath.Join(p.Dir, "emblem.svg"))     // optional; checked at load
+	portrait, _ := os.ReadFile(filepath.Join(p.Dir, "portrait.svg")) // optional; checked at load
 	return out(map[string]any{
 		"id": p.Manifest.ID, "hash": p.Hash, "manifest": read("manifest.json"),
 		"strings": read("strings/en.json"), "compound": p.Compound, "codex": string(codex),
-		"emblem": string(emblem),
+		"emblem": string(emblem), "portrait": string(portrait),
+		"scene":  read("scene.json"), // optional 3D room; null when absent
 		"actions": p.Order,
 	})
 }

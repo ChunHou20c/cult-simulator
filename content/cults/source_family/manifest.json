@@ -1,7 +1,7 @@
 {
   "schema": "1.2",
   "id": "source_family",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "difficulty": "tutorial",
   "names": "real",
   "theme": {

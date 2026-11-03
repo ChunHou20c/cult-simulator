@@ -322,6 +322,23 @@ func (l *Loader) LoadPack(dir string) (*Pack, error) {
 		}
 	}
 
+	// Portrait (optional): the leader's likeness for the 3D room, which shows
+	// it heavily pixelated. Same rules as the emblem: plain, static SVG.
+	if b, err := os.ReadFile(filepath.Join(dir, "portrait.svg")); err == nil {
+		if msg := checkEmblem(b); msg != "" {
+			add("portrait.svg: %s", msg)
+		}
+	}
+
+	// Scene (optional): how the 3D room is furnished. Display only, read by
+	// the web app; here we only check it is a JSON object.
+	if b, err := os.ReadFile(filepath.Join(dir, "scene.json")); err == nil {
+		var sc map[string]json.RawMessage
+		if err := json.Unmarshal(b, &sc); err != nil {
+			add("scene.json: %v", err)
+		}
+	}
+
 	// Strings (English is required at launch).
 	if b, err := os.ReadFile(filepath.Join(dir, "strings", "en.json")); err != nil {
 		add("strings/en.json missing: %v", err)

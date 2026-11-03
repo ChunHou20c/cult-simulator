@@ -9,8 +9,12 @@ const cult = new URLSearchParams(location.search).get("cult") || "rajneeshpuram"
 const mods = import.meta.glob("../../content/cults/*/*.json", { eager: true }) as Record<string, any>;
 const manifest = mods[`../../content/cults/${cult}/manifest.json`].default;
 const compound = mods[`../../content/cults/${cult}/compound.json`].default;
+const sceneDef = mods[`../../content/cults/${cult}/scene.json`]?.default;
 const emblems = import.meta.glob("../../content/cults/*/emblem.svg", { eager: true, query: "?raw", import: "default" }) as Record<string, string>;
 const emblemSVG = emblems[`../../content/cults/${cult}/emblem.svg`];
+const portraits = import.meta.glob("../../content/cults/*/portrait.svg", { eager: true, query: "?raw", import: "default" }) as Record<string, string>;
+const portraitSVG = portraits[`../../content/cults/${cult}/portrait.svg`];
+const portrait = portraitSVG ? "data:image/svg+xml;charset=utf-8," + encodeURIComponent(portraitSVG) : undefined;
 const emblem = emblemSVG ? "data:image/svg+xml;charset=utf-8," + encodeURIComponent(emblemSVG) : undefined;
 const now = Date.now();
 const avatars: any = {};
@@ -22,15 +26,17 @@ for (let i = 0; i < 24; i++) {
   const x = kneel ? m.x : 60 + ((i * 137) % (compound.width - 120)), y = kneel ? m.y : 140 + ((i * 89) % (compound.height - 180));
   avatars[id] = { id, name: names[i % names.length], fx: x, fy: y, tx: kneel ? x : x + 120, ty: kneel ? y : y + 40, t0: kneel ? 0 : now, pose: kneel ? "kneel" : "stand", mat: kneel ? m.id : undefined, ritual: i === 3 || i === 5 ? { id: "chant", at: now + 300 } : undefined, defected: i === 20 };
 }
-avatars.me = { id: "me", name: "You (Still Lantern)", fx: compound.width / 2, fy: compound.height - 80, tx: compound.width / 2, ty: compound.height - 80, t0: 0, pose: "stand" };
-S().set({ you: "me", avatars, layout: compound, player: { cult } as any, packs: { [cult]: { manifest, emblem } as any }, convergence: { key: "ritual:chant", at: now + 300 } });
+// ?at=x,y puts you somewhere else (the camera follows you).
+const [ax, ay] = (new URLSearchParams(location.search).get("at") ?? `${compound.width / 2},${compound.height - 80}`).split(",").map(Number);
+avatars.me = { id: "me", name: "You (Still Lantern)", fx: ax, fy: ay, tx: ax, ty: ay, t0: 0, pose: "stand" };
+S().set({ you: "me", avatars, layout: compound, player: { cult } as any, packs: { [cult]: { manifest, emblem, portrait, scene: sceneDef } as any }, convergence: { key: "ritual:chant", at: now + 300 } });
 const flat = new URLSearchParams(location.search).has("2d");
-const scene = new CompoundScene3D();
+const view = new CompoundScene3D();
 if (flat) new CompoundScene().mount(document.getElementById("c")!);
-else scene.mount(document.getElementById("c")!);
+else view.mount(document.getElementById("c")!);
 // ?zoom=0.6 moves the camera closer (like pinch or the mouse wheel).
 const zoom = Number(new URLSearchParams(location.search).get("zoom"));
-if (zoom) scene.zoom = zoom;
+if (zoom) view.zoom = zoom;
 (window as any).S = S;
 
 // Fake room activity: someone does an action or a ritual every so often.

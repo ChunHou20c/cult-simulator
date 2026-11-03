@@ -2,6 +2,7 @@
 // need. Packs come from their hashed asset URL when the server names one,
 // otherwise from the get_pack RPC. Nothing here knows a specific cult.
 import { rpc } from "./net";
+import type { SceneDef } from "./Room3D";
 import type { OutfitDef } from "./outfit";
 
 export type Widget = "bar" | "counter" | "currency" | "months";
@@ -29,7 +30,8 @@ export interface Manifest {
   /** What members wear, in 3D and 2D; see outfit.ts. */
   outfit?: OutfitDef;
 }
-export interface Mat { id: string; x: number; y: number }
+/** A place to sit. r: which way a seated player faces, in degrees (180, the default, faces the dais). */
+export interface Mat { id: string; x: number; y: number; r?: number }
 export interface CompoundLayout { width: number; height: number; mats: Mat[]; spawn: [number, number][] }
 
 export interface Pack {
@@ -42,6 +44,10 @@ export interface Pack {
   actions: string[]; // display order: enabled shared actions, then signature actions
   /** The cult's symbol as a data: URL (so WebGL can use it from any asset host), if the pack has one. */
   emblem?: string;
+  /** The leader's portrait (portrait.svg) as a data: URL; the 3D room shows it pixelated. */
+  portrait?: string;
+  /** How the 3D room is built and furnished (scene.json); see Room3D.ts. */
+  scene?: SceneDef;
 }
 
 /** The pack's three slotted actions in slot order, or null for an older pack. */
@@ -68,22 +74,24 @@ export async function loadPack(info: PackInfo): Promise<Pack> {
   let pack: Pack;
   if (info.url) {
     const text = (rel: string) => fetch(info.url + rel).then((r) => (r.ok ? r.text() : "")).catch(() => "");
-    const [manifest, strings, compound, codex, emblem] = await Promise.all([
+    const [manifest, strings, compound, codex, emblem, scene, portrait] = await Promise.all([
       fetchJSON(info.url + "manifest.json"),
       fetchJSON(info.url + "strings/en.json"),
       fetchJSON(info.url + "compound.json").catch(() => null),
       text("codex/en.md"),
       text("emblem.svg"),
+      fetchJSON(info.url + "scene.json").catch(() => undefined),
+      text("portrait.svg"),
     ]);
     const shared = (manifest.sharedActions ?? SHARED) as string[];
     pack = {
-      id: info.id, hash: info.hash, manifest, strings, codex, emblem: svgURL(emblem),
+      id: info.id, hash: info.hash, manifest, strings, codex, emblem: svgURL(emblem), scene, portrait: svgURL(portrait),
       compound: compound ?? defaultCompound(),
       actions: [...SHARED.filter((a) => shared.includes(a)), ...manifest.actions.map((a: ActionDef) => a.id)],
     };
   } else {
     const r = await rpc<any>("get_pack", { id: info.id });
-    pack = { id: r.id, hash: r.hash, manifest: r.manifest, strings: r.strings, compound: r.compound, codex: r.codex, actions: r.actions, emblem: svgURL(r.emblem) };
+    pack = { id: r.id, hash: r.hash, manifest: r.manifest, strings: r.strings, compound: r.compound, codex: r.codex, actions: r.actions, emblem: svgURL(r.emblem), scene: r.scene ?? undefined, portrait: svgURL(r.portrait) };
   }
   cache.set(key, pack);
   return pack;

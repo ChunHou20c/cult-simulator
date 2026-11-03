@@ -7,6 +7,8 @@ import { useStore, S, type Avatar } from "./store";
 import { avatarPos, kneel, walkTo } from "./game";
 import { Figures, loadModel, type Figure } from "./Figure";
 import { clipFor } from "./anim";
+import { loadProps, PropMaker } from "./Props";
+import { buildRoom3D } from "./Room3D";
 import { emblemCanvas } from "./emblem";
 import { lookFor, outfitOf, type Look } from "./outfit";
 
@@ -15,7 +17,6 @@ import { lookFor, outfitOf, type Look } from "./outfit";
 const TILT_WIDE = THREE.MathUtils.degToRad(52);
 const TILT_TALL = THREE.MathUtils.degToRad(66);
 const FOV = 38;
-const WALL_H = 120;
 
 type Sprite = {
   root: THREE.Group;
@@ -59,6 +60,12 @@ export class CompoundScene3D {
   lastFrame = performance.now();
   figures = new Figures();
   accent = new THREE.Color(0xe0b44c); // the pack theme's accent, for the ring round your feet
+  hemi = new THREE.HemisphereLight(0xfff1dc, 0x2a1f16, 1.6);
+  sun = new THREE.DirectionalLight(0xffe2b8, 1.6);
+  props?: Awaited<ReturnType<typeof loadProps>>;
+  propsFailed = false;
+  propMaker?: PropMaker;
+  seats = new Map<string, { height: number; facing: number }>();
   roomId = 0; // bumps on each rebuild, so a late emblem never lands in an old room
   // Shared geometry: one of each, reused by every avatar.
   geo = {
@@ -81,10 +88,8 @@ export class CompoundScene3D {
 
     this.scene.background = new THREE.Color(0x16130f);
     this.scene.fog = new THREE.Fog(0x16130f, 1400, 3200);
-    this.scene.add(new THREE.HemisphereLight(0xfff1dc, 0x2a1f16, 1.6));
-    const sun = new THREE.DirectionalLight(0xffe2b8, 1.6);
-    sun.position.set(-300, 900, 500);
-    this.scene.add(sun, this.room, this.people, this.fx);
+    this.sun.position.set(-300, 900, 500);
+    this.scene.add(this.hemi, this.sun, this.room, this.people, this.fx);
 
     r.domElement.addEventListener("pointerdown", this.onDown);
     r.domElement.addEventListener("pointerup", this.onUp);
@@ -165,102 +170,89 @@ export class CompoundScene3D {
     for (const c of [...this.room.children]) {
       this.room.remove(c);
       c.traverse((o) => {
+        // Furniture shares its geometry and materials with the model library.
+        if (o.userData.shared) return;
         (o as THREE.Mesh).geometry?.dispose();
         const mat = (o as THREE.Mesh).material as THREE.MeshBasicMaterial | undefined;
         mat?.map?.dispose();
         mat?.dispose();
       });
     }
+    this.propMaker?.dispose();
     this.matHits = [];
     const id = ++this.roomId;
     if (!L) return;
     const th = this.theme();
     this.accent = th.accent;
     this.youMat.color.copy(th.accent);
-    const W = L.width, H = L.height;
-    const std = (c: THREE.Color, extra: THREE.MeshStandardMaterialParameters = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.9, ...extra });
-
-    // Floor, slightly larger than the walkable area, and a darker surround.
-    const floor = new THREE.Mesh(new THREE.BoxGeometry(W, 8, H), std(th.floor));
-    floor.position.set(W / 2, -4, H / 2);
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(W * 4, H * 4), std(th.floor.clone().multiplyScalar(0.45)));
-    ground.rotation.x = -Math.PI / 2;
-    ground.position.set(W / 2, -8.5, H / 2);
-    this.room.add(ground, floor);
-
-    // Walls on the back and sides; the front stays open to the camera.
-    const wallMat = std(th.primary.clone().multiplyScalar(0.55));
-    const back = new THREE.Mesh(new THREE.BoxGeometry(W + 40, WALL_H, 20), wallMat);
-    back.position.set(W / 2, WALL_H / 2 - 8, -10);
-    const left = new THREE.Mesh(new THREE.BoxGeometry(20, WALL_H * 0.6, H), wallMat);
-    left.position.set(-10, (WALL_H * 0.6) / 2 - 8, H / 2);
-    const right = left.clone();
-    right.position.x = W + 10;
-    this.room.add(back, left, right);
-
-    // Pillars along the side walls, outside the walkable strip.
-    const pillarGeo = new THREE.CylinderGeometry(10, 12, WALL_H, 12);
-    const pillarMat = std(th.primary.clone().multiplyScalar(0.8));
-    for (let z = 90; z < H - 40; z += 170) {
-      for (const x of [6, W - 6]) {
-        const p = new THREE.Mesh(pillarGeo, pillarMat);
-        p.position.set(x, WALL_H / 2 - 8, z);
-        this.room.add(p);
-      }
+    const st = S();
+    const pack = st.player ? st.packs[st.player.cult] : undefined;
+    const def = pack?.scene;
+    // Furnished rooms need the furniture models: build a plain room now and
+    // rebuild once they arrive (or stay plain if they fail to load).
+    if (def && !this.props && !this.propsFailed) {
+      loadProps()
+        .then((lib) => {
+          if (this.destroyed || id !== this.roomId) return;
+          this.props = lib;
+          this.buildRoom();
+        })
+        .catch(() => (this.propsFailed = true));
     }
+    this.propMaker = this.props ? new PropMaker(this.props) : undefined;
+    const built = buildRoom3D(this.room, L, th, def, this.propMaker);
+    this.matHits = built.matHits;
+    this.seats = built.seats;
+    this.hemi.color.copy(built.light.sky);
+    this.hemi.groundColor.copy(built.light.ground);
+    this.hemi.intensity = built.light.intensity;
+    this.sun.color.copy(built.light.sun);
+    this.sun.intensity = built.light.intensity;
+    this.scene.background = built.light.background;
+    (this.scene.fog as THREE.Fog).color.copy(built.light.background);
 
-    // The dais with the leader's empty seat, as in 2D.
-    const dais = new THREE.Mesh(new THREE.BoxGeometry(240, 14, 70), std(th.primary));
-    dais.position.set(W / 2, 7, 75);
-    const seat = new THREE.Mesh(new THREE.CylinderGeometry(22, 24, 10, 24), std(th.accent, { emissive: th.accent, emissiveIntensity: 0.25 }));
-    seat.position.set(W / 2, 19, 75);
-    this.room.add(dais, seat);
-    // Candles along the dais edge: emissive, no real lights (cheap on phones).
-    const candleGeo = new THREE.CylinderGeometry(3, 3, 14, 8);
-    const flameMat = new THREE.MeshBasicMaterial({ color: 0xffc46b });
-    const candleMat = std(new THREE.Color(0xefe6d6));
-    for (let i = 0; i < 6; i++) {
-      const x = W / 2 - 100 + i * 40;
-      const c = new THREE.Mesh(candleGeo, candleMat);
-      c.position.set(x, 21, 104);
-      const f = new THREE.Mesh(new THREE.SphereGeometry(3, 8, 6), flameMat);
-      f.position.set(x, 31, 104);
-      this.room.add(c, f);
+    // The leader's portrait, deliberately pixelated: drawn tiny, shown with
+    // nearest-neighbour filtering so it stays blocky up close.
+    if (built.portrait && pack?.portrait) {
+      const p = built.portrait;
+      emblemCanvas(pack.portrait, 160).then((c) => {
+        if (!c || id !== this.roomId || this.destroyed) return;
+        const small = document.createElement("canvas");
+        small.width = 16;
+        small.height = 20;
+        small.getContext("2d")?.drawImage(c, 0, 0, c.width, c.height * 1.0, 0, 0, 16, 20);
+        const tex = new THREE.CanvasTexture(small);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.magFilter = tex.minFilter = THREE.NearestFilter;
+        tex.generateMipmaps = false;
+        const pic = new THREE.Mesh(new THREE.PlaneGeometry(p.width, p.width * 1.25), new THREE.MeshBasicMaterial({ map: tex }));
+        pic.position.copy(p.at);
+        this.room.add(pic);
+      });
     }
 
     // A banner on the back wall behind the dais, carrying the cult's emblem.
-    const banner = new THREE.Mesh(new THREE.PlaneGeometry(110, 104), std(th.primary.clone().multiplyScalar(0.35)));
-    banner.position.set(W / 2, 58, 1);
-    const rod = new THREE.Mesh(new THREE.CylinderGeometry(2.5, 2.5, 124, 8), std(th.accent, { metalness: 0.4, roughness: 0.5 }));
-    rod.rotation.z = Math.PI / 2;
-    rod.position.set(W / 2, 111, 3);
-    this.room.add(banner, rod);
-    const st = S();
-    emblemCanvas(st.player ? st.packs[st.player.cult]?.emblem : undefined, 256).then((c) => {
-      if (!c || id !== this.roomId || this.destroyed) return;
-      const tex = new THREE.CanvasTexture(c);
-      tex.colorSpace = THREE.SRGBColorSpace;
-      tex.anisotropy = 4;
-      const emblem = new THREE.Mesh(new THREE.PlaneGeometry(84, 84), new THREE.MeshBasicMaterial({ map: tex, transparent: true }));
-      emblem.position.set(W / 2, 60, 2);
-      this.room.add(emblem);
-    });
-
-    // Mats: low cushions, with a larger invisible box for easy tapping.
-    const matGeo = new THREE.BoxGeometry(60, 6, 40);
-    const matMat = std(th.primary.clone().lerp(th.floor, 0.25));
-    const hitGeo = new THREE.BoxGeometry(70, 20, 50);
-    const hitMat = new THREE.MeshBasicMaterial({ visible: false });
-    for (const m of L.mats) {
-      const mesh = new THREE.Mesh(matGeo, matMat);
-      mesh.position.set(m.x, 3, m.y);
-      const hit = new THREE.Mesh(hitGeo, hitMat);
-      hit.position.set(m.x, 10, m.y);
-      hit.userData.mat = m.id;
-      this.matHits.push(hit);
-      this.room.add(mesh, hit);
+    if (built.banner) {
+      const b = built.banner;
+      const std = (c: THREE.Color, extra: THREE.MeshStandardMaterialParameters = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.9, ...extra });
+      const banner = new THREE.Mesh(new THREE.PlaneGeometry(110, 104), std(th.primary.clone().multiplyScalar(0.35)));
+      banner.position.set(b.x, b.y - 2, b.z + 8);
+      const rod = new THREE.Mesh(new THREE.CylinderGeometry(2.5, 2.5, 124, 8), std(th.accent, { metalness: 0.4, roughness: 0.5 }));
+      rod.rotation.z = Math.PI / 2;
+      rod.position.set(b.x, b.y + 51, b.z + 10);
+      this.room.add(banner, rod);
+      emblemCanvas(pack?.emblem, 256).then((c) => {
+        if (!c || id !== this.roomId || this.destroyed) return;
+        const tex = new THREE.CanvasTexture(c);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.anisotropy = 4;
+        const emblem = new THREE.Mesh(new THREE.PlaneGeometry(84, 84), new THREE.MeshBasicMaterial({ map: tex, transparent: true }));
+        emblem.position.set(b.x, b.y, b.z + 9);
+        this.room.add(emblem);
+      });
     }
   }
+
 
   resize() {
     const el = this.el, r = this.renderer;
@@ -402,9 +394,12 @@ export class CompoundScene3D {
       const moving = Math.hypot(dx, dy) > 0.05;
       const kneeling = a.pose === "kneel" && !moving;
       if (moving) sp.facing = Math.atan2(dx, dy);
-      else if (kneeling) sp.facing = Math.PI; // kneel facing the dais
+      const seat = kneeling && a.mat ? this.seats.get(a.mat) : undefined;
+      if (kneeling) sp.facing = seat?.facing ?? Math.PI; // the seat's way, else facing the dais
       sp.last = [x, y];
-      sp.root.position.set(x, 0, y);
+      // Sitting on a chair or bench lifts the figure to its seat.
+      const lift = seat?.height ?? 0;
+      sp.root.position.set(x, sp.root.position.y + (lift - sp.root.position.y) * Math.min(1, dt * 8), y);
       // Turn smoothly rather than snapping.
       const turn = Math.atan2(Math.sin(sp.facing - sp.root.rotation.y), Math.cos(sp.facing - sp.root.rotation.y));
       sp.root.rotation.y += turn * Math.min(1, dt * 12);
