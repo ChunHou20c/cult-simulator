@@ -6,10 +6,12 @@
   "summary": "Build Synanon's holdings to $30M in assets while keeping legal scrutiny below 70.",
   "stat.assets": "Assets",
   "goal.assets": "$30M in assets",
-  "action.open_rehab_house": "Open a rehab house",
-  "action.open_rehab_house.desc": "Costs $8,000. Adds assets and residents, and draws attention.",
+  "action.open_rehab_house": "Run the business",
+  "action.open_rehab_house.desc": "Sell donated goods and open new houses. Adds assets and residents, and draws attention.",
   "action.play_the_game": "Play The Game",
-  "action.play_the_game.desc": "The group's confrontational talk circle. Raises loyalty, and paranoia with it.",
+  "action.play_the_game.desc": "The group's confrontational talk circle. Raises loyalty and keeps the group inward, with paranoia.",
   "codex.fall.prosecuted": "In 1991 the IRS revoked Synanon's tax exemption and demanded back taxes. The organization dissolved that year.",
-  "codex.fall.violence": "In October 1978 two Synanon members put a rattlesnake in the mailbox of Paul Morantz, a Los Angeles lawyer who had won a case against the group. He was bitten and survived. Founder Charles Dederich and the two members pleaded no contest in 1980."
+  "codex.fall.violence": "In October 1978 two Synanon members put a rattlesnake in the mailbox of Paul Morantz, a Los Angeles lawyer who had won a case against the group. He was bitten and survived. Founder Charles Dederich and the two members pleaded no contest in 1980.",
+  "action.recruit": "Bring someone in",
+  "action.recruit.desc": "Bring in someone off the street. Adds residents and a little scrutiny; opening up eases paranoia."
 }

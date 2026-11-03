@@ -189,3 +189,43 @@ button.danger { color: var(--bad); }
 .gate .help-toggle { margin-top: 18px; background: var(--panel); color: var(--text); border-color: var(--line); }
 .gate .help-toggle.on { background: var(--gold); color: #1b1408; }
 .links { display: flex; align-items: center; gap: 12px; }
+
+/* ---- three icon actions ---- */
+.slots { display: flex; justify-content: center; gap: 22px; padding: 2px 0 4px; }
+.slot-wrap { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.slot { position: relative; width: 64px; height: 64px; border-radius: 50%; padding: 0; display: grid; place-items: center; color: #fff; border: 2px solid rgba(255,255,255,0.18); touch-action: manipulation; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.slot-recruit { background: #3f6fa8; }
+.slot-work { background: #b2852c; }
+.slot-devote { background: #b2475c; }
+.slot:disabled { filter: grayscale(0.7) brightness(0.65); }
+.slot.converge { box-shadow: 0 0 0 3px var(--accent, var(--gold)), 0 0 18px var(--accent, var(--gold)); }
+.slot-ring { position: absolute; inset: -6px; width: calc(100% + 12px); height: calc(100% + 12px); pointer-events: none; }
+.slot-ring circle { fill: none; stroke: rgba(255,255,255,0.85); stroke-width: 3; }
+.slot-spin { position: absolute; right: -2px; top: -2px; }
+.slot-cost { font-size: 0.9rem; line-height: 0.6; letter-spacing: 2px; color: var(--gold, #d8b25a); }
+.slot-label { font-size: 0.72rem; color: #f3eadb; opacity: 0.85; }
+.slot-tip { position: absolute; color: #f3eadb; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%); width: 200px; padding: 8px 10px; border-radius: 10px; background: rgba(33,28,23,0.96); font-size: 0.8rem; text-align: center; z-index: 5; }
+
+/* ---- mini game overlay ---- */
+.minigame { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); width: min(420px, 100%); z-index: 6; background: #1b1713; border: 1px solid rgba(255,255,255,0.1); border-radius: 18px 18px 0 0; padding: 10px 12px max(12px, env(safe-area-inset-bottom)); box-shadow: 0 -8px 30px rgba(0,0,0,0.4); }
+.mg-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.mg-slot { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; color: #fff; flex: none; }
+.mg-bar { flex: 1; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.12); overflow: hidden; }
+.mg-bar span { display: block; height: 100%; background: var(--accent, var(--gold, #d8b25a)); }
+.mg-skip { flex: none; }
+.mg-field { display: block; width: min(100%, 40vh); margin: 0 auto; aspect-ratio: 1; touch-action: none; -webkit-user-select: none; user-select: none; background: rgba(255,255,255,0.03); border-radius: 12px; cursor: pointer; }
+.mg-emoji { font-size: 8px; }
+.mg-emoji.small { font-size: 6px; }
+.mg-target { fill: none; stroke: var(--accent, #d8b25a); stroke-width: 0.8; }
+.mg-count { font-size: 5px; fill: rgba(255,255,255,0.6); letter-spacing: 1px; }
+.mg-track { fill: rgba(255,255,255,0.12); }
+.mg-zone { fill: rgba(216,178,90,0.45); }
+.mg-zone-perfect { fill: rgba(255,226,140,0.9); }
+.mg-needle { fill: #fff; }
+.mg-approach { fill: none; stroke: rgba(255,255,255,0.7); stroke-width: 0.8; }
+.mg-drum { fill: rgba(178,71,92,0.85); }
+.mg-pop { font-size: 9px; font-weight: 700; }
+.mg-pop.g10 { fill: #ffe28c; }
+.mg-pop.g6 { fill: #8bc48a; }
+.mg-pop.g0 { fill: #e57373; }
+@media (prefers-reduced-motion: reduce) { .slot.converge { box-shadow: 0 0 0 3px var(--accent, var(--gold)); } }

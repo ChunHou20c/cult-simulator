@@ -1,7 +1,7 @@
 {
-  "schema": "1.0",
+  "schema": "1.1",
   "id": "source_family",
-  "version": "1.2.0",
+  "version": "2.0.0",
   "difficulty": "tutorial",
   "names": "real",
   "theme": {
@@ -27,9 +27,40 @@
     "label": "goal.members_profit"
   },
   "guard": "cult.loyalty >= 60",
+  "sharedActions": [],
   "actions": [
     {
+      "id": "recruit",
+      "slot": "recruit",
+      "game": "flick",
+      "skin": {
+        "target": "🧑",
+        "item": "🥗"
+      },
+      "energy": 1,
+      "effects": [
+        {
+          "stat": "followers",
+          "add": 4,
+          "scale": "yield"
+        },
+        {
+          "stat": "scrutiny",
+          "add": 0.6
+        },
+        {
+          "stat": "paranoia",
+          "add": -1
+        }
+      ]
+    },
+    {
       "id": "run_restaurant",
+      "slot": "work",
+      "game": "timing",
+      "skin": {
+        "zone": "🍳"
+      },
       "energy": 2,
       "cooldownSec": 60,
       "effects": [
@@ -40,7 +71,7 @@
         },
         {
           "stat": "profit",
-          "add": 250,
+          "add": 215,
           "scale": "yield"
         },
         {
@@ -50,25 +81,27 @@
       ]
     },
     {
-      "id": "record_album",
-      "energy": 2,
-      "cooldownSec": 600,
+      "id": "jam_session",
+      "slot": "devote",
+      "game": "beat",
+      "skin": {
+        "zone": "🥁"
+      },
+      "energy": 1,
       "effects": [
         {
           "stat": "loyalty",
-          "add": 2
+          "add": 2.5
+        },
+        {
+          "stat": "paranoia",
+          "add": 0.5
         },
         {
           "stat": "scrutiny",
-          "add": 2
+          "add": -2
         }
-      ],
-      "buff": {
-        "id": "album_buzz",
-        "target": "recruit",
-        "mul": 1.5,
-        "durationMin": 30
-      }
+      ]
     }
   ],
   "tick": [
@@ -91,7 +124,8 @@
     }
   ],
   "animations": {
+    "recruit": "talk",
     "run_restaurant": "carry",
-    "record_album": "dance"
+    "jam_session": "dance"
   }
 }

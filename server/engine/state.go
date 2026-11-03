@@ -54,24 +54,24 @@ type Contributor struct {
 }
 
 type CultState struct {
-	ID         string             `json:"id"`
-	Status     string             `json:"status"`
-	FallReason string             `json:"fallReason,omitempty"`
-	FallText   string             `json:"fallText,omitempty"`
-	Historical bool               `json:"historical,omitempty"`
-	EndedAt    int64              `json:"endedAt,omitempty"`
-	Phase      string             `json:"phase,omitempty"`
-	PhaseIndex int                `json:"phaseIndex,omitempty"`
-	Players    int                `json:"players"`
-	Defectors  int                `json:"defectors"`
-	Stats      map[string]float64 `json:"stats"`
-	Progress   float64            `json:"progress"`
-	Yield      float64            `json:"yield"`
-	Buffs      []Buff             `json:"buffs"`
-	Timers     []Timer            `json:"timers"`
-	Fired      map[string]bool    `json:"fired,omitempty"`
-	Actions    int                `json:"actions"`
-	Milestone  int                `json:"milestone"`
+	ID         string                  `json:"id"`
+	Status     string                  `json:"status"`
+	FallReason string                  `json:"fallReason,omitempty"`
+	FallText   string                  `json:"fallText,omitempty"`
+	Historical bool                    `json:"historical,omitempty"`
+	EndedAt    int64                   `json:"endedAt,omitempty"`
+	Phase      string                  `json:"phase,omitempty"`
+	PhaseIndex int                     `json:"phaseIndex,omitempty"`
+	Players    int                     `json:"players"`
+	Defectors  int                     `json:"defectors"`
+	Stats      map[string]float64      `json:"stats"`
+	Progress   float64                 `json:"progress"`
+	Yield      float64                 `json:"yield"`
+	Buffs      []Buff                  `json:"buffs"`
+	Timers     []Timer                 `json:"timers"`
+	Fired      map[string]bool         `json:"fired,omitempty"`
+	Actions    int                     `json:"actions"`
+	Milestone  int                     `json:"milestone"`
 	Contrib    map[string]*Contributor `json:"contrib"`
 }
 
@@ -125,6 +125,10 @@ type ActionReq struct {
 	Evidence  int    `json:"e,omitempty"`
 	Converged bool   `json:"v,omitempty"`
 	At        int64  `json:"t"`
+	// Played is set when the action came with a mini game round; Quality is
+	// the server-scored result in [0, 1]. Unplayed actions use the plain numbers.
+	Played  bool    `json:"p,omitempty"`
+	Quality float64 `json:"q,omitempty"`
 }
 
 type ActionResult struct {

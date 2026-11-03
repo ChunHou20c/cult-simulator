@@ -6,10 +6,12 @@
   "summary": "Keep the city incorporated for 60 months while its funds stay above the commune's upkeep.",
   "stat.months": "Months incorporated",
   "goal.months": "60 months incorporated",
-  "action.build_on_ranch": "Build on the ranch",
-  "action.build_on_ranch.desc": "Costs $15,000. Housing, roads and a reservoir keep the city going.",
-  "action.host_festival": "Host a festival",
-  "action.host_festival.desc": "Thousands of visitors bring money and new sannyasins, and the county takes notice.",
+  "action.build_on_ranch": "Build the city",
+  "action.build_on_ranch.desc": "Festivals and donations pay for building. Adds funds and months of the city, and draws attention.",
   "codex.fall.federal_case": "In October 1985 Rajneesh was arrested in North Carolina while trying to leave the country. He pleaded guilty to immigration fraud and was deported. The commune emptied and the city ceased to exist.",
-  "codex.fall.the_dalles": "In September 1984 commune leaders contaminated salad bars at ten restaurants in The Dalles, Oregon, with salmonella. 751 people fell ill and nobody died. It remains the largest bioterror attack in United States history. Ma Anand Sheela and others were convicted."
+  "codex.fall.the_dalles": "In September 1984 commune leaders contaminated salad bars at ten restaurants in The Dalles, Oregon, with salmonella. 751 people fell ill and nobody died. It remains the largest bioterror attack in United States history. Ma Anand Sheela and others were convicted.",
+  "action.recruit": "Welcome sannyasins",
+  "action.recruit.desc": "Welcome visitors off the bus. Adds followers and a little scrutiny; opening up eases paranoia.",
+  "action.dynamic_meditation": "Dynamic meditation",
+  "action.dynamic_meditation.desc": "Breath, shaking and silence together. Raises loyalty and keeps the ranch inward, with a little paranoia."
 }

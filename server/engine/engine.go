@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"github.com/cult-simulator/server/content"
+	"github.com/cult-simulator/server/minigame"
 )
 
 // Engine applies the generic rules to whatever packs a Day was opened with.
@@ -88,8 +89,9 @@ func buffMul(cs *CultState, action string, now int64) float64 {
 }
 
 // applyEffects runs effects in order; each sees the stats left by the one
-// before. scaledMul multiplies add values of effects marked scale: yield.
-func (e *Engine) applyEffects(p *content.Pack, cs *CultState, effs []content.Effect, scaledMul float64, now, endsAt int64, deltas map[string]float64) {
+// before. scaledMul multiplies add values of effects marked scale: yield;
+// heatMul multiplies positive adds to scrutiny and paranoia.
+func (e *Engine) applyEffects(p *content.Pack, cs *CultState, effs []content.Effect, scaledMul, heatMul float64, now, endsAt int64, deltas map[string]float64) {
 	for _, ef := range effs {
 		r, ok := p.Stats[ef.Stat]
 		if !ok {
@@ -102,6 +104,9 @@ func (e *Engine) applyEffects(p *content.Pack, cs *CultState, effs []content.Eff
 		case content.OpAdd:
 			if ef.Scaled {
 				v *= scaledMul
+			}
+			if v > 0 && (ef.Stat == "scrutiny" || ef.Stat == "paranoia") {
+				v *= heatMul
 			}
 			after = before + v
 		case content.OpMul:
@@ -175,7 +180,13 @@ func (e *Engine) Apply(d *WorldDay, r ActionReq) ActionResult {
 		if r.Converged {
 			mul *= ConvergenceMul
 		}
-		e.applyEffects(p, cs, a.Effects, mul, now, d.EndsAt, deltas)
+		heat := 1.0
+		if r.Played {
+			// The action's mini game: playing well pays more and draws less heat.
+			mul *= minigame.Gain(r.Quality)
+			heat = minigame.Heat(r.Quality)
+		}
+		e.applyEffects(p, cs, a.Effects, mul, heat, now, d.EndsAt, deltas)
 		if a.Buff != nil {
 			b := Buff{ID: a.Buff.ID, Target: a.Buff.Target, Mul: a.Buff.Mul, Until: now + int64(a.Buff.DurationMin*60)}
 			replaced := false
@@ -231,7 +242,7 @@ func (e *Engine) applyDefector(p *content.Pack, cs *CultState, r ActionReq, res 
 		*res = ActionResult{Reason: "unknown_action"}
 		return false
 	}
-	e.applyEffects(p, cs, effs, 1, now, endsAt, res.Deltas)
+	e.applyEffects(p, cs, effs, 1, 1, now, endsAt, res.Deltas)
 	return true
 }
 
@@ -342,11 +353,11 @@ func (e *Engine) Tick(d *WorldDay, now int64) {
 			if cs.Status != StatusStanding {
 				continue
 			}
-			e.applyEffects(p, cs, content.CoreTick(), 1, t, d.EndsAt, nil)
+			e.applyEffects(p, cs, content.CoreTick(), 1, 1, t, d.EndsAt, nil)
 			if cs.Stats["loyalty"] < LowLoyalty {
 				cs.Stats["followers"] = math.Floor(cs.Stats["followers"] * LowLoyaltyLeak)
 			}
-			e.applyEffects(p, cs, p.Tick, 1, t, d.EndsAt, nil)
+			e.applyEffects(p, cs, p.Tick, 1, 1, t, d.EndsAt, nil)
 			live := cs.Buffs[:0]
 			for _, b := range cs.Buffs {
 				if b.Until > t {
@@ -396,9 +407,9 @@ func (e *Engine) events(d *WorldDay, p *content.Pack, cs *CultState, now int64) 
 		cs.Fired[sc.ID] = true
 		pass := sc.Check.Bool(ev)
 		if pass {
-			e.applyEffects(p, cs, sc.Pass, 1, now, d.EndsAt, nil)
+			e.applyEffects(p, cs, sc.Pass, 1, 1, now, d.EndsAt, nil)
 		} else {
-			e.applyEffects(p, cs, sc.Fail, 1, now, d.EndsAt, nil)
+			e.applyEffects(p, cs, sc.Fail, 1, 1, now, d.EndsAt, nil)
 		}
 		e.addEvent(d, Event{At: now, Kind: "event", Cult: cs.ID, Key: sc.Text, Data: map[string]any{"id": sc.ID, "pass": pass}})
 	}

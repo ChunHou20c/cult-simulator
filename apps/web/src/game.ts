@@ -3,6 +3,7 @@
 import { OP, PROTOCOL, CLIENT_VERSION, UI_VERSION, login, rpc, joinMatch, leaveMatch, send, setHandlers } from "./net";
 import { loadPack, type PackInfo } from "./packs";
 import { S, useStore, type Avatar, type World } from "./store";
+import type { Input } from "./minigame/core";
 
 let seq = 0;
 let lobbyTimer: number | undefined;
@@ -80,6 +81,28 @@ export function act(actionId: string, defector = false) {
   S().set({ pending: [...S().pending, { seq: s, action: actionId }] });
   send(defector ? OP.DEFECT_ACT : OP.ACT, { actionId, clientSeq: s });
   // If the server never answers (socket dropped), clear the spinner.
+  window.setTimeout(() => S().set({ pending: S().pending.filter((p) => p.seq !== s) }), 8000);
+}
+
+/** Starts an action's mini game round; the server answers with ACT_CHALLENGE. */
+export function actStart(actionId: string) {
+  const s = ++seq;
+  S().set({ pending: [...S().pending, { seq: s, action: actionId }] });
+  send(OP.ACT_START, { actionId, clientSeq: s });
+  // No challenge and no result (socket dropped): clear the spinner. A round
+  // in play keeps its spinner until the result arrives.
+  window.setTimeout(() => {
+    if (S().round?.seq !== s) S().set({ pending: S().pending.filter((p) => p.seq !== s) });
+  }, 8000);
+}
+
+/** Sends a round's raw inputs (or a skip). The server scores them. */
+export function finishRound(inputs: Input[], skip = false) {
+  const r = S().round;
+  if (!r) return;
+  S().set({ round: undefined });
+  send(OP.ACT_FINISH, { nonce: r.nonce, inputs: skip ? [] : inputs, skip });
+  const s = r.seq;
   window.setTimeout(() => S().set({ pending: S().pending.filter((p) => p.seq !== s) }), 8000);
 }
 
@@ -180,6 +203,9 @@ function onMessage(op: number, d: any) {
       if (a) set({ avatars: { ...st.avatars, [d.id]: { ...a, act: { id: d.action, at: Date.now() } } } });
       break;
     }
+    case OP.ACT_CHALLENGE:
+      set({ round: { seq: d.clientSeq, nonce: d.nonce, seed: d.seed, game: d.game, action: d.action, at: performance.now() } });
+      break;
     case OP.CONVERGENCE:
       set({ convergence: { key: d.key, at: Date.now() } });
       break;
@@ -190,7 +216,7 @@ function onMessage(op: number, d: any) {
       set({
         pending: st.pending.filter((x) => x.seq !== d.clientSeq),
         energy: d.energy, energyAt: d.energyAt, cooldowns: d.cooldowns ?? {}, player,
-        lastResult: p ? { action: p.action, ok: d.ok, reason: d.reason, deltas: d.deltas, at: Date.now() } : st.lastResult,
+        lastResult: p ? { action: p.action, ok: d.ok, reason: d.reason, deltas: d.deltas, quality: d.quality, grades: d.grades, at: Date.now() } : st.lastResult,
       });
       break;
     }
