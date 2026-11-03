@@ -10,6 +10,7 @@ export function Lobby() {
   const [confirm, setConfirm] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [open, setOpen] = useState<Record<string, boolean>>({});
   if (!world) return null;
   const live = world.phase === "live";
 
@@ -52,10 +53,18 @@ export function Lobby() {
               <div className="card-art" style={{ background: `linear-gradient(135deg, ${theme.primary ?? "#555"}, ${theme.floor ?? "#222"})` }}>
                 <span className="diff">{pack?.manifest.difficulty}</span>
               </div>
-              <h2>{t(pack, "name")}</h2>
-              <p className="muted small">{t(pack, "era")}</p>
-              <p>{t(pack, "tagline")}</p>
-              <p className="goal"><strong>Goal:</strong> {t(pack, "summary")}</p>
+              <div className="card-head">
+                <h2>{t(pack, "name")}</h2>
+                <button className={`round ${open[c.id] ? "on" : ""}`} aria-label={`About ${t(pack, "name")}`} aria-expanded={!!open[c.id]} onClick={() => setOpen({ ...open, [c.id]: !open[c.id] })}>?</button>
+              </div>
+              {open[c.id] && (
+                <div className="card-more">
+                  <p className="muted small">{t(pack, "era")}</p>
+                  <p>{t(pack, "tagline")}</p>
+                  <p className="goal"><strong>Goal:</strong> {t(pack, "summary")}</p>
+                  <button className="link" onClick={() => set({ screen: "codex", codexCult: c.id })}>History</button>
+                </div>
+              )}
               <ProgressBar value={c.progress ?? 0} color={theme.accent} label="Progress" />
               <div className="card-meta">
                 <span className="mono">{Math.round((c.progress ?? 0) * 100)}%</span>
@@ -70,7 +79,6 @@ export function Lobby() {
                     {player ? "Your pick is locked" : "Join"}
                   </button>
                 )}
-                <button className="link" onClick={() => set({ screen: "codex", codexCult: c.id })}>History</button>
               </div>
             </article>
           );
