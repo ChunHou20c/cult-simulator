@@ -44,7 +44,11 @@ export class CompoundScene3D {
   kneelTarget: string | null = null;
   target = new THREE.Vector3();
   dist = 1000;
-  frameW = 0; // width of the floor kept in view (narrower on portrait screens)
+  frameW = 0; // floor kept in view around you (narrower on portrait screens)
+  frameD = 0;
+  zoom = 1; // pinch or mouse wheel: 0.6 (closer) .. 2.2 (farther)
+  pointers = new Map<number, { x: number; y: number }>();
+  pinch?: number;
   tilt = TILT_WIDE;
   el?: HTMLElement;
   ro?: ResizeObserver;
@@ -81,6 +85,9 @@ export class CompoundScene3D {
 
     r.domElement.addEventListener("pointerdown", this.onDown);
     r.domElement.addEventListener("pointerup", this.onUp);
+    r.domElement.addEventListener("pointercancel", this.onUp);
+    r.domElement.addEventListener("pointermove", this.onMove);
+    r.domElement.addEventListener("wheel", this.onWheel, { passive: false });
     this.ro = new ResizeObserver(() => this.resize());
     this.ro.observe(el);
     this.resize();
@@ -123,6 +130,9 @@ export class CompoundScene3D {
     if (!r) return;
     r.domElement.removeEventListener("pointerdown", this.onDown);
     r.domElement.removeEventListener("pointerup", this.onUp);
+    r.domElement.removeEventListener("pointercancel", this.onUp);
+    r.domElement.removeEventListener("pointermove", this.onMove);
+    r.domElement.removeEventListener("wheel", this.onWheel);
     this.scene.traverse((o) => {
       const m = o as THREE.Mesh;
       m.geometry?.dispose();
@@ -244,14 +254,16 @@ export class CompoundScene3D {
     if (!L) return;
     const aspect = this.camera.aspect;
     this.tilt = aspect >= 1 ? TILT_WIDE : TILT_TALL;
-    this.frameW = aspect >= 1.1 ? L.width : Math.min(L.width, Math.max(380, L.width * aspect * 0.95));
-    const fw = this.frameW;
+    // Keep a patch of floor around you in view, not the whole room: about
+    // five or six mats across on a wide screen, three on a phone.
+    this.frameW = Math.min(L.width, aspect >= 1 ? 560 : 250);
+    this.frameD = Math.min(L.height, this.frameW * (aspect >= 1 ? 0.55 : 1.1));
+    const fw = this.frameW, fd = this.frameD;
     const center = new THREE.Vector3(L.width / 2, 0, L.height / 2);
     const corners = [
-      [center.x - fw / 2, -10], [center.x + fw / 2, -10],
-      [center.x - fw / 2, L.height], [center.x + fw / 2, L.height],
+      [center.x - fw / 2, center.z - fd / 2], [center.x + fw / 2, center.z - fd / 2],
+      [center.x - fw / 2, center.z + fd / 2], [center.x + fw / 2, center.z + fd / 2],
     ].map(([x, z]) => new THREE.Vector3(x, 0, z));
-    corners.push(new THREE.Vector3(center.x, WALL_H, -10));
     let lo = 200, hi = 8000;
     for (let i = 0; i < 30; i++) {
       const mid = (lo + hi) / 2;
@@ -402,20 +414,22 @@ export class CompoundScene3D {
       }
     }
 
-    // Camera: fixed angle; on narrow screens follow your avatar sideways.
+    // Camera: fixed angle, close behind you, following as you walk. Near the
+    // walls it stops a little short so the view doesn't drift off the room.
     const me = st.you ? this.sprites.get(st.you) : undefined;
-    let tx = L.width / 2;
-    if (me && this.frameW < L.width) {
-      const half = this.frameW / 2;
-      tx = THREE.MathUtils.clamp(me.root.position.x, half, L.width - half);
-    } else if (me) {
-      tx = L.width / 2 + (me.root.position.x - L.width / 2) * 0.08;
+    let tx = L.width / 2, tz = L.height / 2;
+    if (me) {
+      const mx = Math.min(this.frameW * 0.3 * this.zoom, L.width / 2);
+      const back = Math.min(this.frameD * 0.25 * this.zoom, L.height / 2);
+      const front = Math.min(this.frameD * 0.5 * this.zoom, L.height / 2);
+      tx = THREE.MathUtils.clamp(me.root.position.x, mx, L.width - mx);
+      tz = THREE.MathUtils.clamp(me.root.position.z, back, L.height - front);
     }
-    const tz = L.height / 2 + (me ? (me.root.position.z - L.height / 2) * 0.08 : 0);
     if (this.target.lengthSq() === 0) this.target.set(tx, 0, tz);
-    this.target.x += (tx - this.target.x) * 0.06;
-    this.target.z += (tz - this.target.z) * 0.06;
-    this.placeCamera(this.target, this.dist);
+    const k = Math.min(1, dt * 4);
+    this.target.x += (tx - this.target.x) * k;
+    this.target.z += (tz - this.target.z) * k;
+    this.placeCamera(this.target, this.dist * this.zoom);
     r.render(this.scene, this.camera);
   }
 
@@ -444,10 +458,40 @@ export class CompoundScene3D {
   }
 
   onDown = (e: PointerEvent) => {
-    this.down = { x: e.clientX, y: e.clientY };
+    this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (this.pointers.size === 2) {
+      this.down = undefined; // a pinch, not a tap
+      this.pinch = this.pinchDist();
+    } else this.down = { x: e.clientX, y: e.clientY };
   };
 
+  onMove = (e: PointerEvent) => {
+    if (!this.pointers.has(e.pointerId)) return;
+    this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (this.pointers.size === 2 && this.pinch) {
+      const d = this.pinchDist();
+      this.setZoom(this.zoom * (this.pinch / d));
+      this.pinch = d;
+    }
+  };
+
+  onWheel = (e: WheelEvent) => {
+    e.preventDefault();
+    this.setZoom(this.zoom * Math.exp(e.deltaY * 0.001));
+  };
+
+  pinchDist() {
+    const [a, b] = [...this.pointers.values()];
+    return Math.max(1, Math.hypot(a.x - b.x, a.y - b.y));
+  }
+
+  setZoom(z: number) {
+    this.zoom = THREE.MathUtils.clamp(z, 0.6, 2.2);
+  }
+
   onUp = (e: PointerEvent) => {
+    this.pointers.delete(e.pointerId);
+    if (this.pointers.size < 2) this.pinch = undefined;
     const d = this.down;
     this.down = undefined;
     // A tap, not a drag or a scroll.
