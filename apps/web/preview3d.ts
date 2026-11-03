@@ -21,9 +21,9 @@ avatars.me = { id: "me", name: "You (Still Lantern)", fx: compound.width / 2, fy
 S().set({ you: "me", avatars, layout: compound, player: { cult } as any, packs: { [cult]: { manifest } as any }, convergence: { key: "ritual:chant", at: now + 300 } });
 const scene = new CompoundScene3D();
 scene.mount(document.getElementById("c")!);
-// ?zoom=0.4 moves the camera closer, to look at the figures.
+// ?zoom=0.6 moves the camera closer (like pinch or the mouse wheel).
 const zoom = Number(new URLSearchParams(location.search).get("zoom"));
-if (zoom) setTimeout(() => (scene.dist *= zoom), 200);
+if (zoom) scene.zoom = zoom;
 (window as any).S = S;
 
 // Fake room activity: someone does an action or a ritual every so often.
