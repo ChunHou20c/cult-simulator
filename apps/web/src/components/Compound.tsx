@@ -108,6 +108,11 @@ export function Compound() {
           <span className="energy-num mono" aria-hidden="true">{energy}⚡</span>
         </div>
         <MusicButton />
+        {canUse3D() && (
+          <button className="round view-toggle" onClick={() => setView(view === "3d" ? "2d" : "3d")} aria-label={view === "3d" ? "Switch to the 2D view" : "Switch to the 3D view"} title={view === "3d" ? "2D view" : "3D view"}>
+            {view === "3d" ? "2D" : "3D"}
+          </button>
+        )}
         <button className={`round ${help ? "on" : ""}`} onClick={() => setHelp(!help)} aria-label={help ? "Hide help" : "Show help"} aria-expanded={help}>?</button>
       </header>
 
@@ -142,11 +147,6 @@ export function Compound() {
               <ProgressBar value={c.progress ?? 0} color={packs[c.id]?.manifest.theme?.accent} />
             </div>
           ))}
-          {canUse3D() && (
-            <p className="small muted">
-              View: <button className="link" onClick={() => setView(view === "3d" ? "2d" : "3d")}>{view === "3d" ? "switch to 2D" : "try 3D (preview)"}</button>
-            </p>
-          )}
           <Ticker />
         </aside>
       )}

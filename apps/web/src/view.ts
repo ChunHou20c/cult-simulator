@@ -1,5 +1,5 @@
 // Which compound renderer to use. 2D is the default and the fallback; 3D is
-// opt-in for now via ?3d=1 or the switch in the help panel, and only where
+// opt-in for now via the 2D/3D button in the top bar (or ?3d=1), and only where
 // WebGL2 works. The choice is remembered per browser.
 import { useSyncExternalStore } from "react";
 
@@ -19,12 +19,18 @@ function read(): View {
 
 let current: View = read();
 
+let webgl2: boolean | undefined;
+
+/** Whether this device can draw the 3D view (checked once). */
 export function canUse3D(): boolean {
-  try {
-    return !!document.createElement("canvas").getContext("webgl2");
-  } catch {
-    return false;
+  if (webgl2 === undefined) {
+    try {
+      webgl2 = !!document.createElement("canvas").getContext("webgl2");
+    } catch {
+      webgl2 = false;
+    }
   }
+  return webgl2;
 }
 
 export function setView(v: View) {
