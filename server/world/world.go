@@ -41,7 +41,10 @@ const (
 // Published is what the world shares with compounds and RPCs in-process.
 // It is replaced atomically once per world tick and after every batch.
 type Published struct {
-	Snap    *engine.Snapshot
+	Snap *engine.Snapshot
+	// Prev is the final snapshot of the Day before this one, so rooms of the
+	// finished Day can still show its result after the next Day has opened.
+	Prev    *engine.Snapshot
 	Packed  []byte // Snap encoded as MessagePack for the WORLD opcode
 	Content *content.Content
 	Engine  *engine.Engine
@@ -122,12 +125,13 @@ type logEntry struct {
 }
 
 type state struct {
-	set       Settings
-	content   *content.Content
-	eng       *engine.Engine
-	day       *engine.WorldDay
-	log       []logEntry
-	chunk     int
+	set        Settings
+	content    *content.Content
+	eng        *engine.Engine
+	day        *engine.WorldDay
+	prev       *engine.Snapshot
+	log        []logEntry
+	chunk      int
 	summarized bool
 }
 
@@ -180,7 +184,17 @@ func (m *Match) MatchInit(ctx context.Context, logger runtime.Logger, db *sql.DB
 // resume loads the current Day's latest snapshot and replays the action log
 // after it. Returns false if there is nothing to resume.
 func (s *state) resume(ctx context.Context, logger runtime.Logger, nk runtime.NakamaModule, now int64) bool {
-	_, end, dayID := s.set.DayBounds(now)
+	// The current Day is the one the system record names. (Days open right
+	// after the last one ends, so they don't line up with the clock.)
+	_, _, dayID := s.set.DayBounds(now)
+	if cur, err := nk.StorageRead(ctx, []*runtime.StorageRead{{Collection: CollSystem, Key: "current"}}); err == nil && len(cur) > 0 {
+		var c struct {
+			DayID string `json:"dayId"`
+		}
+		if json.Unmarshal([]byte(cur[0].Value), &c) == nil && c.DayID != "" {
+			dayID = c.DayID
+		}
+	}
 	objs, err := nk.StorageRead(ctx, []*runtime.StorageRead{{Collection: CollDays, Key: dayID}})
 	if err != nil || len(objs) == 0 {
 		return false
@@ -190,7 +204,8 @@ func (s *state) resume(ctx context.Context, logger runtime.Logger, nk runtime.Na
 		Chunk int             `json:"chunk"`
 		Done  bool            `json:"summarized"`
 	}
-	if err := json.Unmarshal([]byte(objs[0].Value), &saved); err != nil || saved.Day.EndsAt != end {
+	// A changed DAY_SECONDS discards the saved Day and opens a fresh one.
+	if err := json.Unmarshal([]byte(objs[0].Value), &saved); err != nil || saved.Day.EndsAt-saved.Day.StartedAt != s.set.DaySeconds {
 		return false
 	}
 	c, err := content.LoadRoster(s.set.ContentDir)
@@ -252,6 +267,10 @@ func (s *state) openDay(ctx context.Context, logger runtime.Logger, nk runtime.N
 		return err
 	}
 	start, end, dayID := s.set.DayBounds(now)
+	if s.day != nil {
+		// The next Day starts now and runs a full DaySeconds.
+		start, end, dayID = now, now+s.set.DaySeconds, nextDayID(now, s.day.DayID)
+	}
 	s.content, s.eng = c, engine.New(c)
 	s.day = s.eng.NewDay(dayID, start, end, nil)
 	s.log, s.chunk, s.summarized = nil, 0, false
@@ -260,12 +279,22 @@ func (s *state) openDay(ctx context.Context, logger runtime.Logger, nk runtime.N
 	return nil
 }
 
+// nextDayID names a Day that opens at now: its UTC start to the minute,
+// with seconds added if that would repeat the Day before.
+func nextDayID(now int64, prev string) string {
+	id := time.Unix(now, 0).UTC().Format("2006-01-02T1504")
+	if id == prev {
+		id = time.Unix(now, 0).UTC().Format("2006-01-02T150405")
+	}
+	return id
+}
+
 func (s *state) publish(now int64) {
 	if s.eng == nil || s.day == nil {
 		return
 	}
 	snap := s.eng.Snapshot(s.day, now)
-	current.Store(&Published{Snap: snap, Packed: Encode(snap), Content: s.content, Engine: s.eng})
+	current.Store(&Published{Snap: snap, Prev: s.prev, Packed: Encode(snap), Content: s.content, Engine: s.eng})
 }
 
 func (s *state) save(ctx context.Context, logger runtime.Logger, nk runtime.NakamaModule) {
@@ -335,14 +364,15 @@ func (m *Match) MatchLoop(ctx context.Context, logger runtime.Logger, db *sql.DB
 		return s
 	}
 	s.eng.Tick(s.day, now)
-	if s.day.Phase == engine.PhaseConcluded {
+	if s.day.Phase == engine.PhaseConcluded || now >= s.day.EndsAt {
+		// The Day is over (a win, every cult fallen, or time up): write its
+		// summary and open the next Day on fresh content straight away.
 		s.conclude(ctx, logger, nk)
-	}
-	if now >= s.day.EndsAt {
-		// Reset: the end sequence has run; open the next Day on fresh content.
-		s.conclude(ctx, logger, nk)
+		ended := s.eng.Snapshot(s.day, now)
 		if err := s.openDay(ctx, logger, nk, now); err != nil {
-			logger.Error("world: reset failed, keeping the old Day: %v", err)
+			logger.Error("world: next Day failed, keeping the old Day: %v", err)
+		} else {
+			s.prev = ended
 		}
 	}
 	if tick%logEveryTicks == 0 {
@@ -447,4 +477,3 @@ func ContentDirFromEnv(ctx context.Context) string {
 	env, _ := ctx.Value(runtime.RUNTIME_CTX_ENV).(map[string]string)
 	return SettingsFrom(env).ContentDir
 }
-

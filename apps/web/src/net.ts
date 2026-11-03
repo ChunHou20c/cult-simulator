@@ -8,9 +8,9 @@ export const CLIENT_VERSION = "1.0.0";
 export const UI_VERSION = 1;
 
 export const OP = {
-  MOVE: 1, KNEEL: 2, RISE: 3, RITUAL: 4, ACT: 10, DEFECT_ACT: 11, HEARTBEAT: 12,
+  MOVE: 1, KNEEL: 2, RISE: 3, RITUAL: 4, ACT: 10, DEFECT_ACT: 11, HEARTBEAT: 12, ACT_START: 13, ACT_FINISH: 14,
   SNAPSHOT: 20, JOINED: 21, LEFT: 22, WALK: 23, POSE: 24, RITUAL_SEEN: 25, CONVERGENCE: 26, ACT_SEEN: 27,
-  ACT_RESULT: 30, WORLD: 31, EVENT: 32, DAY_ENDED: 33, CORRECTION: 40,
+  ACT_RESULT: 30, WORLD: 31, EVENT: 32, DAY_ENDED: 33, ACT_CHALLENGE: 34, CORRECTION: 40,
 } as const;
 
 // Runtime config (public/config.js, rewritten by the web container at start)

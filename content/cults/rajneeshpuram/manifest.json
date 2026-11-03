@@ -1,7 +1,7 @@
 {
-  "schema": "1.0",
+  "schema": "1.1",
   "id": "rajneeshpuram",
-  "version": "1.3.0",
+  "version": "2.1.0",
   "difficulty": "medium",
   "names": "real",
   "theme": {
@@ -28,46 +28,83 @@
     "label": "goal.months"
   },
   "guard": "cult.funds > cult.followers * 20",
+  "sharedActions": [],
   "actions": [
     {
-      "id": "build_on_ranch",
-      "energy": 2,
-      "cooldownSec": 60,
-      "requires": "cult.funds >= 15000",
+      "id": "recruit",
+      "slot": "recruit",
+      "game": "flick",
+      "skin": {
+        "target": "🧑",
+        "item": "🌸"
+      },
+      "energy": 1,
       "effects": [
-        {
-          "stat": "funds",
-          "add": -15000
-        },
-        {
-          "stat": "months",
-          "add": 0.35,
-          "scale": "yield"
-        },
-        {
-          "stat": "paranoia",
-          "add": 0.8
-        }
-      ]
-    },
-    {
-      "id": "host_festival",
-      "energy": 2,
-      "cooldownSec": 300,
-      "effects": [
-        {
-          "stat": "funds",
-          "add": 40000,
-          "scale": "yield"
-        },
         {
           "stat": "followers",
-          "add": 25,
+          "add": 4,
           "scale": "yield"
         },
         {
           "stat": "scrutiny",
-          "add": 3
+          "add": 0.6
+        },
+        {
+          "stat": "paranoia",
+          "add": -1
+        }
+      ]
+    },
+    {
+      "id": "build_on_ranch",
+      "slot": "work",
+      "game": "timing",
+      "skin": {
+        "zone": "🔨"
+      },
+      "energy": 2,
+      "cooldownSec": 60,
+      "effects": [
+        {
+          "stat": "funds",
+          "add": 20000,
+          "scale": "yield"
+        },
+        {
+          "stat": "months",
+          "add": 0.26,
+          "scale": "yield"
+        },
+        {
+          "stat": "scrutiny",
+          "add": 1
+        },
+        {
+          "stat": "paranoia",
+          "add": 0.5
+        }
+      ]
+    },
+    {
+      "id": "dynamic_meditation",
+      "slot": "devote",
+      "game": "beat",
+      "skin": {
+        "zone": "🧘"
+      },
+      "energy": 1,
+      "effects": [
+        {
+          "stat": "loyalty",
+          "add": 2.5
+        },
+        {
+          "stat": "paranoia",
+          "add": 0.5
+        },
+        {
+          "stat": "scrutiny",
+          "add": -2
         }
       ]
     }
@@ -93,8 +130,8 @@
     }
   ],
   "animations": {
+    "recruit": "talk",
     "build_on_ranch": "fix",
-    "host_festival": "dance",
-    "ritual": "dance"
+    "dynamic_meditation": "dance"
   }
 }

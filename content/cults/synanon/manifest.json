@@ -1,7 +1,7 @@
 {
-  "schema": "1.0",
+  "schema": "1.1",
   "id": "synanon",
-  "version": "1.3.0",
+  "version": "2.1.0",
   "difficulty": "easy",
   "names": "real",
   "theme": {
@@ -27,25 +27,51 @@
     "label": "goal.assets"
   },
   "guard": "cult.scrutiny < 70",
+  "sharedActions": [],
   "actions": [
     {
-      "id": "open_rehab_house",
-      "energy": 2,
-      "cooldownSec": 60,
-      "requires": "cult.funds >= 8000",
+      "id": "recruit",
+      "slot": "recruit",
+      "game": "flick",
+      "skin": {
+        "target": "🧍",
+        "item": "📄"
+      },
+      "energy": 1,
       "effects": [
         {
-          "stat": "funds",
-          "add": -8000
+          "stat": "followers",
+          "add": 4,
+          "scale": "yield"
         },
         {
+          "stat": "scrutiny",
+          "add": 0.6
+        },
+        {
+          "stat": "paranoia",
+          "add": -1
+        }
+      ]
+    },
+    {
+      "id": "open_rehab_house",
+      "slot": "work",
+      "game": "timing",
+      "skin": {
+        "zone": "📦"
+      },
+      "energy": 2,
+      "cooldownSec": 60,
+      "effects": [
+        {
           "stat": "assets",
-          "add": 300000,
+          "add": 120000,
           "scale": "yield"
         },
         {
           "stat": "followers",
-          "add": 5
+          "add": 3
         },
         {
           "stat": "scrutiny",
@@ -55,16 +81,24 @@
     },
     {
       "id": "play_the_game",
-      "energy": 2,
-      "cooldownSec": 60,
+      "slot": "devote",
+      "game": "beat",
+      "skin": {
+        "zone": "🗣️"
+      },
+      "energy": 1,
       "effects": [
         {
           "stat": "loyalty",
-          "add": 5
+          "add": 3
         },
         {
           "stat": "paranoia",
-          "add": 2
+          "add": 0.5
+        },
+        {
+          "stat": "scrutiny",
+          "add": -2
         }
       ]
     }
@@ -90,7 +124,8 @@
     }
   ],
   "animations": {
-    "open_rehab_house": "fix",
+    "recruit": "talk",
+    "open_rehab_house": "carry",
     "play_the_game": "sit_talk"
   }
 }

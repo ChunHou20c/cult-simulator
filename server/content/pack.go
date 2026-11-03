@@ -11,7 +11,7 @@ import (
 // understands. Within major 1 changes are additive only.
 const (
 	SchemaMajor = 1
-	SchemaMinor = 0
+	SchemaMinor = 1
 )
 
 // Core stats every cult has. Packs may add their own.
@@ -67,7 +67,14 @@ type ActionDef struct {
 	Effects     []EffectDef `json:"effects"`
 	Buff        *BuffDef    `json:"buff,omitempty"`
 	Phases      []string    `json:"phases,omitempty"`
+	// Since schema 1.1: which of the three buttons this is, and its mini game.
+	Slot string            `json:"slot,omitempty"`
+	Game string            `json:"game,omitempty"`
+	Skin map[string]string `json:"skin,omitempty"`
 }
+
+// Slots are the three action buttons, in display order.
+var Slots = []string{"recruit", "work", "devote"}
 
 type BuffDef struct {
 	ID          string  `json:"id"`
@@ -135,6 +142,8 @@ type Action struct {
 	Effects     []Effect
 	Buff        *BuffDef
 	Phases      map[string]bool
+	Slot        string // "" for unslotted actions
+	Game        string // mini game id, "" for none
 }
 
 type Fall struct {

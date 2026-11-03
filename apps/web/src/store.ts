@@ -66,6 +66,9 @@ export type Screen = "gate" | "lobby" | "compound" | "end" | "summary" | "archiv
 
 export interface Pending { seq: number; action: string }
 
+/** An open mini game round, as the server handed it out. */
+export interface Round { seq: number; nonce: string; seed: number; game: "flick" | "timing" | "beat"; action: string; at: number }
+
 interface State {
   screen: Screen;
   error?: string;
@@ -86,9 +89,11 @@ interface State {
   energyAt: number;
   cooldowns: Record<string, number>;
   pending: Pending[];
-  lastResult?: { action: string; ok: boolean; reason?: string; deltas?: Record<string, number>; at: number };
+  round?: Round;
+  lastResult?: { action: string; ok: boolean; reason?: string; deltas?: Record<string, number>; quality?: number; grades?: number[]; at: number };
   convergence?: { key: string; at: number };
-  dayEnded?: { dayId: string; reason?: string; winner?: string; reset?: boolean };
+  /** The Day that just ended; cult is this player's cult's final state when the next Day already opened. */
+  dayEnded?: { dayId: string; reason?: string; winner?: string; reset?: boolean; cult?: CultView };
   summaryDay?: string;
   codexCult?: string;
   set: (p: Partial<State>) => void;

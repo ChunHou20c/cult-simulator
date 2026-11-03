@@ -18,23 +18,26 @@ const (
 	OpAct       = 10
 	OpDefectAct = 11
 	OpHeartbeat = 12
+	OpActStart  = 13 // {actionId, clientSeq}: begin an action's mini game round
+	OpActFinish = 14 // {nonce, inputs, skip}: the round's raw inputs; the server scores them
 )
 
 // Server to client.
 const (
-	OpSnapshot    = 20
-	OpJoined      = 21
-	OpLeft        = 22
-	OpWalk        = 23
-	OpPose        = 24
-	OpRitualSeen  = 25
-	OpConvergence = 26
-	OpActSeen     = 27 // {id, action}: a player in the room did an action (for its movement)
-	OpActResult   = 30
-	OpWorld       = 31
-	OpEvent       = 32
-	OpDayEnded    = 33
-	OpCorrection  = 40
+	OpSnapshot     = 20
+	OpJoined       = 21
+	OpLeft         = 22
+	OpWalk         = 23
+	OpPose         = 24
+	OpRitualSeen   = 25
+	OpConvergence  = 26
+	OpActSeen      = 27 // {id, action}: a player in the room did an action (for its movement)
+	OpActResult    = 30 // now also {quality, grades} when the action had a round
+	OpWorld        = 31
+	OpEvent        = 32
+	OpDayEnded     = 33
+	OpActChallenge = 34 // {clientSeq, nonce, seed, game, action}: play this round
+	OpCorrection   = 40
 )
 
 // Rituals are wordless gestures any player can make in a compound.

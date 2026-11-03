@@ -7,7 +7,13 @@ import type { SceneDef } from "./Room3D";
 export type Widget = "bar" | "counter" | "currency" | "months";
 
 export interface StatDef { widget: Widget; label: string; min?: number; max?: number }
-export interface ActionDef { id: string; energy?: number; cooldownSec?: number; requires?: string }
+export type Slot = "recruit" | "work" | "devote";
+export const SLOTS: Slot[] = ["recruit", "work", "devote"];
+export interface ActionDef {
+  id: string; energy?: number; cooldownSec?: number; requires?: string;
+  /** Schema 1.1: which of the three icon buttons, its mini game and what the game shows. */
+  slot?: Slot; game?: "flick" | "timing" | "beat"; skin?: { target?: string; item?: string; zone?: string };
+}
 export interface Manifest {
   id: string;
   version: string;
@@ -39,6 +45,12 @@ export interface Pack {
   portrait?: string;
   /** How the 3D room is built and furnished (scene.json); see Room3D.ts. */
   scene?: SceneDef;
+}
+
+/** The pack's three slotted actions in slot order, or null for an older pack. */
+export function slotted(pack: Pack): ActionDef[] | null {
+  const by = SLOTS.map((s) => pack.manifest.actions.find((a) => a.slot === s));
+  return by.every(Boolean) ? (by as ActionDef[]) : null;
 }
 
 export interface PackInfo { id: string; version: string; schema: string; hash: string; url: string; difficulty: string }

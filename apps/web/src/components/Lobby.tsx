@@ -41,7 +41,7 @@ export function Lobby() {
       </header>
       {!live && (
         <div className="notice">
-          The Day has ended. <button className="link" onClick={() => set({ screen: "summary", summaryDay: world.dayId })}>See the summary</button>. A new world opens at the reset.
+          The Day has ended. <button className="link" onClick={() => set({ screen: "summary", summaryDay: world.dayId })}>See the summary</button>. A new world is opening.
         </div>
       )}
       <section className="cards">
