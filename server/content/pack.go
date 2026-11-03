@@ -197,6 +197,9 @@ type Mat struct {
 	ID string  `json:"id"`
 	X  float64 `json:"x"`
 	Y  float64 `json:"y"`
+	// R is which way a player seated here faces, in degrees (display only;
+	// 0 or absent means the default, facing the dais).
+	R float64 `json:"r,omitempty"`
 }
 
 func DefaultCompound() Compound {

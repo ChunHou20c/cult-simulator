@@ -1,0 +1,271 @@
+{
+  "about": "The Source Family's house in the Hollywood Hills: a wood-panelled living room where the family sat on floor pillows for morning meditation and song, next to the kitchen that fed their Sunset Strip health-food restaurant.",
+  "sky": "#f2c79a",
+  "ground": "#7d8f4e",
+  "floor": {
+    "color": "#6b4a30"
+  },
+  "light": {
+    "sky": "#ffe9cc",
+    "ground": "#5a4630",
+    "sun": "#ffd9a8",
+    "intensity": 1.8
+  },
+  "walls": {
+    "style": "kit",
+    "windows": true,
+    "c": {
+      "wood": "#7a5236",
+      "_defaultMat": "#8a5e3e"
+    }
+  },
+  "pillars": false,
+  "colors": {
+    "wood": "#8a5e3e",
+    "woodDark": "#5c3d28",
+    "leafsGreen": "#6b8f3e",
+    "woodBark": "#6a4e36",
+    "dirt": "#8a7048",
+    "grass": "#7f9a4a"
+  },
+  "dais": {
+    "color": "#a06a42",
+    "seat": {
+      "m": "loungeDesignSofa",
+      "r": 360,
+      "c": {
+        "carpet": "#f2efe6"
+      }
+    }
+  },
+  "seat": {
+    "m": "pillow",
+    "s": 2.6,
+    "height": 4,
+    "c": {
+      "carpet": "#f2efe6"
+    }
+  },
+  "props": [
+    {
+      "m": "rugRound",
+      "x": 330,
+      "y": 310,
+      "s": 4.2,
+      "c": {
+        "carpet": "#c8743a",
+        "carpetDarker": "#a85a2a"
+      }
+    },
+    {
+      "m": "rugRound",
+      "x": 630,
+      "y": 310,
+      "s": 4.2,
+      "c": {
+        "carpet": "#d9a441",
+        "carpetDarker": "#b8862e"
+      }
+    },
+    {
+      "m": "speaker",
+      "x": 190,
+      "y": 40,
+      "r": 360,
+      "s": 1.5
+    },
+    {
+      "m": "speaker",
+      "x": 710,
+      "y": 40,
+      "r": 360,
+      "s": 1.5
+    },
+    {
+      "m": "radio",
+      "x": 160,
+      "y": 30,
+      "h": 25,
+      "r": 360
+    },
+    {
+      "m": "sideTable",
+      "x": 160,
+      "y": 30,
+      "r": 360
+    },
+    {
+      "m": "loungeSofaLong",
+      "x": 40,
+      "y": 230,
+      "r": 90,
+      "c": {
+        "carpet": "#b56a3a"
+      }
+    },
+    {
+      "m": "tableCoffee",
+      "x": 100,
+      "y": 230,
+      "r": 90
+    },
+    {
+      "m": "loungeSofaOttoman",
+      "x": 50,
+      "y": 360,
+      "c": {
+        "carpet": "#d9a441"
+      }
+    },
+    {
+      "m": "lampRoundFloor",
+      "x": 40,
+      "y": 120
+    },
+    {
+      "m": "pottedPlant",
+      "x": 30,
+      "y": 30,
+      "s": 1.4
+    },
+    {
+      "m": "plantSmall2",
+      "x": 40,
+      "y": 470,
+      "s": 1.6
+    },
+    {
+      "m": "pillowLong",
+      "x": 70,
+      "y": 540,
+      "s": 2.2,
+      "c": {
+        "carpet": "#c8743a"
+      }
+    },
+    {
+      "m": "kitchenBar",
+      "x": 860,
+      "y": 200,
+      "r": -90
+    },
+    {
+      "m": "kitchenBar",
+      "x": 860,
+      "y": 266,
+      "r": -90
+    },
+    {
+      "m": "kitchenBarEnd",
+      "x": 860,
+      "y": 332,
+      "r": -90
+    },
+    {
+      "m": "kitchenFridge",
+      "x": 925,
+      "y": 70,
+      "r": -90
+    },
+    {
+      "m": "kitchenStove",
+      "x": 925,
+      "y": 140,
+      "r": -90
+    },
+    {
+      "m": "kitchenSink",
+      "x": 925,
+      "y": 206,
+      "r": -90
+    },
+    {
+      "m": "kitchenCabinet",
+      "x": 925,
+      "y": 272,
+      "r": -90
+    },
+    {
+      "m": "kitchenBlender",
+      "x": 860,
+      "y": 210,
+      "h": 33
+    },
+    {
+      "m": "kitchenCoffeeMachine",
+      "x": 925,
+      "y": 280,
+      "h": 33,
+      "r": -90
+    },
+    {
+      "m": "tableRound",
+      "x": 860,
+      "y": 470
+    },
+    {
+      "m": "chair",
+      "x": 820,
+      "y": 470,
+      "r": 90
+    },
+    {
+      "m": "chair",
+      "x": 900,
+      "y": 470,
+      "r": -90
+    },
+    {
+      "m": "chair",
+      "x": 860,
+      "y": 430,
+      "r": 360
+    },
+    {
+      "m": "pottedPlant",
+      "x": 930,
+      "y": 600,
+      "s": 1.3
+    },
+    {
+      "m": "lampRoundFloor",
+      "x": 790,
+      "y": 40
+    }
+  ],
+  "scatter": [
+    {
+      "m": [
+        "tree_oak",
+        "tree_default",
+        "tree_fat",
+        "tree_detailed"
+      ],
+      "n": 30,
+      "inner": 130,
+      "outer": 480,
+      "seed": 21,
+      "s": [
+        2,
+        3
+      ]
+    },
+    {
+      "m": [
+        "plant_bushLarge",
+        "plant_bushDetailed",
+        "flower_yellowA",
+        "grass_large",
+        "rock_largeA"
+      ],
+      "n": 44,
+      "inner": 50,
+      "outer": 400,
+      "seed": 23,
+      "s": [
+        1.4,
+        2.4
+      ]
+    }
+  ]
+}

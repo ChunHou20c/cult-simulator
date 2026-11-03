@@ -1,0 +1,211 @@
+{
+  "about": "Rajneesh Mandir at Rajneeshpuram, Oregon: a huge open-sided meeting hall on steel posts in the high desert, where thousands sat on the floor facing a white platform and the guru's empty chair.",
+  "sky": "#cfe0ea",
+  "ground": "#c9a868",
+  "floor": {
+    "color": "#e8e0d0",
+    "size": [
+      1040,
+      700
+    ]
+  },
+  "light": {
+    "sky": "#ffffff",
+    "ground": "#a88a52",
+    "sun": "#fff2d6",
+    "intensity": 2.0
+  },
+  "walls": false,
+  "pillars": {
+    "color": "#8f949a",
+    "height": 150,
+    "every": 140
+  },
+  "colors": {
+    "dirt": "#b98f55",
+    "leafsGreen": "#6f8a4e",
+    "woodBark": "#7a5e44",
+    "stone": "#a08a6a",
+    "grass": "#b2a35c"
+  },
+  "dais": {
+    "color": "#f4f1ea",
+    "seat": {
+      "m": "loungeChair",
+      "r": 360,
+      "c": {
+        "carpet": "#f7f4ee",
+        "wood": "#d8d2c6"
+      }
+    }
+  },
+  "seat": {
+    "m": "pillow",
+    "s": 2.6,
+    "height": 4,
+    "c": {
+      "carpet": "#8c1f3c"
+    }
+  },
+  "props": [
+    {
+      "m": "speaker",
+      "x": 300,
+      "y": 60,
+      "r": 360,
+      "s": 1.6
+    },
+    {
+      "m": "speaker",
+      "x": 660,
+      "y": 60,
+      "r": 360,
+      "s": 1.6
+    },
+    {
+      "m": "pottedPlant",
+      "x": 340,
+      "y": 100,
+      "s": 1.4
+    },
+    {
+      "m": "pottedPlant",
+      "x": 620,
+      "y": 100,
+      "s": 1.4
+    },
+    {
+      "m": "flower_redA",
+      "x": 400,
+      "y": 108,
+      "s": 1.6
+    },
+    {
+      "m": "flower_yellowA",
+      "x": 430,
+      "y": 108,
+      "s": 1.6
+    },
+    {
+      "m": "flower_redA",
+      "x": 530,
+      "y": 108,
+      "s": 1.6
+    },
+    {
+      "m": "flower_yellowA",
+      "x": 560,
+      "y": 108,
+      "s": 1.6
+    },
+    {
+      "m": "rugRectangle",
+      "x": 480,
+      "y": 310,
+      "s": 7.5,
+      "c": {
+        "carpet": "#d9c9b0",
+        "carpetDarker": "#cdb998"
+      }
+    },
+    {
+      "m": "tent_detailedOpen",
+      "x": -170,
+      "y": 140,
+      "r": 70,
+      "s": 2.4,
+      "c": {
+        "colorRed": "#e9e2d2"
+      }
+    },
+    {
+      "m": "tent_detailedOpen",
+      "x": -190,
+      "y": 380,
+      "r": 100,
+      "s": 2.4,
+      "c": {
+        "colorRed": "#e9e2d2"
+      }
+    },
+    {
+      "m": "tent_detailedOpen",
+      "x": 1130,
+      "y": 160,
+      "r": -70,
+      "s": 2.4,
+      "c": {
+        "colorRed": "#e9e2d2"
+      }
+    },
+    {
+      "m": "tent_detailedOpen",
+      "x": 1150,
+      "y": 400,
+      "r": -100,
+      "s": 2.4,
+      "c": {
+        "colorRed": "#e9e2d2"
+      }
+    }
+  ],
+  "scatter": [
+    {
+      "m": [
+        "cliff_large_rock",
+        "rock_tallA",
+        "rock_largeB"
+      ],
+      "n": 18,
+      "inner": 420,
+      "outer": 700,
+      "seed": 11,
+      "s": [
+        3,
+        5
+      ]
+    },
+    {
+      "m": [
+        "tree_cone",
+        "tree_pineRoundA",
+        "tree_pineSmallA"
+      ],
+      "n": 26,
+      "inner": 160,
+      "outer": 520,
+      "seed": 13,
+      "s": [
+        1.4,
+        2.4
+      ],
+      "c": {
+        "leafsGreen": "#4f6b45",
+        "leafsDark": "#556b3f",
+        "woodBarkDark": "#6a4e36"
+      }
+    },
+    {
+      "m": [
+        "grass_large",
+        "plant_bush",
+        "rock_smallA",
+        "stone_largeA"
+      ],
+      "n": 40,
+      "inner": 70,
+      "outer": 400,
+      "seed": 17,
+      "s": [
+        1.4,
+        2.4
+      ]
+    }
+  ],
+  "portrait": {
+    "stand": true,
+    "size": 80,
+    "frame": "#d8d2c6",
+    "y": 20
+  }
+}
