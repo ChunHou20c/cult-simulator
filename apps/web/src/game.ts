@@ -116,7 +116,11 @@ export const WALK_SPEED = 140; // px/s, same as the server
 export function avatarPos(a: Avatar, nowMs: number): [number, number] {
   const d = Math.hypot(a.tx - a.fx, a.ty - a.fy);
   if (d === 0) return [a.tx, a.ty];
-  const f = ((nowMs - a.t0) / 1000) * WALK_SPEED / d;
+  // Clamp to the start: the local clock can lag the server's by the network
+  // delay, so a fresh WALK's t0 may still be "in the future" here. Without
+  // the clamp, f goes negative and the avatar is drawn behind its start point,
+  // i.e. it jumps the opposite way before walking back.
+  const f = Math.max(0, ((nowMs - a.t0) / 1000) * WALK_SPEED / d);
   if (f >= 1) return [a.tx, a.ty];
   return [a.fx + (a.tx - a.fx) * f, a.fy + (a.ty - a.fy) * f];
 }
@@ -147,6 +151,9 @@ function onMessage(op: number, d: any) {
     }
     case OP.WALK: {
       const a = st.avatars[d.id];
+      // Our own move echoed back: we already predicted it locally, so keep
+      // the prediction rather than restart the walk from the server's view.
+      if (a && d.id === st.you && Math.abs(a.tx - d.tx) < 0.5 && Math.abs(a.ty - d.ty) < 0.5) break;
       if (a) set({ avatars: { ...st.avatars, [d.id]: { ...a, fx: d.fx, fy: d.fy, tx: d.tx, ty: d.ty, t0: d.t0, pose: "stand", mat: undefined } } });
       break;
     }
@@ -183,7 +190,9 @@ function onMessage(op: number, d: any) {
       break;
     }
     case OP.WORLD:
-      set({ world: d, clockSkew: d.serverTime * 1000 - Date.now() });
+      // WORLD's serverTime is whole seconds; the compound SNAPSHOT already set
+      // a millisecond clock skew, so don't overwrite it with a coarser one.
+      set({ world: d });
       break;
     case OP.DAY_ENDED:
       set({ dayEnded: d });
