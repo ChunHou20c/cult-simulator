@@ -72,6 +72,8 @@ export interface Round { seq: number; nonce: string; seed: number; game: "flick"
 interface State {
   screen: Screen;
   error?: string;
+  /** A new release is installed and waiting for a reload. */
+  updateReady?: boolean;
   name?: string;
   userId?: string;
   engine?: EngineInfo;

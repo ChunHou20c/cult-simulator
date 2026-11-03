@@ -8,6 +8,7 @@ import { cultView, energyNow, useStore } from "../store";
 import { Countdown, Emblem, MusicButton, ProgressBar, StatList, useNow } from "./widgets";
 import { Ticker } from "./Ticker";
 import { canUse3D, setView, useView, type View } from "../view";
+import { applyUpdate } from "../update";
 
 const REASONS: Record<string, string> = {
   no_energy: "Not enough energy",
@@ -128,6 +129,9 @@ export function Compound() {
           {Array.from({ length: engine.maxEnergy }, (_, i) => <span key={i} className={`pip ${i < energy ? "on" : ""}`} />)}
           <span className="energy-num mono" aria-hidden="true">{energy}⚡</span>
         </div>
+        {st.updateReady && (
+          <button className="round update" onClick={() => applyUpdate()} aria-label="A new version is ready. Reload to update." title="Update ready, tap to reload">⟳</button>
+        )}
         <MusicButton />
         {canUse3D() && (
           <button className="round view-toggle" onClick={() => setView(view === "3d" ? "2d" : "3d")} aria-label={view === "3d" ? "Switch to the 2D view" : "Switch to the 3D view"} title={view === "3d" ? "2D view" : "3D view"}>

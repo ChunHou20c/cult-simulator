@@ -4,6 +4,7 @@ import { OP, PROTOCOL, CLIENT_VERSION, UI_VERSION, login, rpc, joinMatch, leaveM
 import { loadPack, type PackInfo } from "./packs";
 import { S, useStore, type Avatar, type World } from "./store";
 import type { Input } from "./minigame/core";
+import { checkForUpdate } from "./update";
 
 let seq = 0;
 let lobbyTimer: number | undefined;
@@ -14,7 +15,9 @@ export async function start() {
     await login();
     const h = await rpc<any>("hello", { protocol: PROTOCOL, client: CLIENT_VERSION, ui: UI_VERSION });
     if (h.updateNeeded) {
-      set({ error: "A new version is available. Reload to update." });
+      // The new release reloads itself once its worker is installed.
+      set({ error: "A new version is available. Updating…" });
+      checkForUpdate();
       return;
     }
     set({ name: h.name, userId: h.userId, engine: h.engine, shared: h.sharedActions ?? [], packInfo: h.packs });
