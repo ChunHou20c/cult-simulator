@@ -666,14 +666,24 @@ func (s *state) flush(ctx context.Context, logger runtime.Logger, nk runtime.Nak
 }
 
 // worldTick broadcasts the world snapshot once a second and handles the
-// Day ending: every client switches to the end card at the same moment;
-// at the next reset the room closes.
+// Day ending: every client switches to the end card at the same moment,
+// and the room closes as soon as the next Day opens.
 func (s *state) worldTick(ctx context.Context, logger runtime.Logger, nk runtime.NakamaModule, d runtime.MatchDispatcher, pub *world.Published) {
 	if pub.Snap.DayID != s.day {
 		for _, pl := range s.players {
 			s.save(ctx, logger, nk, pl)
 		}
-		_ = d.BroadcastMessage(protocol.OpDayEnded, world.Encode(map[string]any{"dayId": s.day, "reset": true, "summaryId": s.day}), nil, nil, true)
+		msg := map[string]any{"dayId": s.day, "reset": true, "summaryId": s.day}
+		if prev := pub.Prev; prev != nil && prev.DayID == s.day {
+			// The next Day opened at once: send this room's result with it.
+			msg["reason"], msg["winner"] = prev.EndReason, prev.Winner
+			for _, c := range prev.Cults {
+				if c.ID == s.cult {
+					msg["cult"] = c
+				}
+			}
+		}
+		_ = d.BroadcastMessage(protocol.OpDayEnded, world.Encode(msg), nil, nil, true)
 		s.ended = true
 		s.updateLabel(d)
 		var ps []runtime.Presence

@@ -21,15 +21,16 @@ export function EndCard() {
   const dayId = dayEnded?.dayId ?? world?.dayId;
   if (!world || !dayId) return null;
   const pack = player ? packs[player.cult] : undefined;
-  const cult = cultView(world, player?.cult);
   const sameDay = world.dayId === dayId;
+  // When the next Day opened at once, the room sent this cult's final state.
+  const cult = dayEnded?.cult && dayEnded.dayId === dayId ? dayEnded.cult : sameDay ? cultView(world, player?.cult) : undefined;
   return (
     <main className="end">
       <div className="end-card" style={{ borderColor: pack?.manifest.theme?.accent }}>
         <Emblem pack={pack} size={56} className="end-emblem" />
         <p className="muted small">Day {dayId}</p>
-        <h1>{dayEnded?.reset && !sameDay ? "The Day is over" : cult?.status === "won" ? `${t(pack, "name")} reached its goal` : cult && cult.status !== "standing" ? `${t(pack, "name")} has ended` : "The Day is over"}</h1>
-        {sameDay && cult?.fallText && (
+        <h1>{!cult ? "The Day is over" : cult.status === "won" ? `${t(pack, "name")} reached its goal` : cult && cult.status !== "standing" ? `${t(pack, "name")} has ended` : "The Day is over"}</h1>
+        {cult?.fallText && (
           <>
             <p className="history">{t(pack, cult.fallText)}</p>
             <p className="small muted">If this history touches your own life, the <a href={HELP} target="_blank" rel="noreferrer">International Cultic Studies Association</a> offers support.</p>
@@ -37,7 +38,7 @@ export function EndCard() {
         )}
         <div className="row">
           <button className="primary" onClick={() => set({ screen: "summary", summaryDay: dayId })}>See the summary</button>
-          <button onClick={async () => { await refreshDay(); set({ screen: "lobby" }); }}>{sameDay ? "Back to the lobby" : "Today's cults"}</button>
+          <button onClick={async () => { await refreshDay(); set({ screen: "lobby" }); }}>{sameDay ? "Back to the lobby" : "Play the new Day"}</button>
         </div>
       </div>
     </main>
