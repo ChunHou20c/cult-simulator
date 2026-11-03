@@ -18,6 +18,7 @@ export class CompoundScene {
   ready = false;
   roomId = 0; // bumps on each redraw, so a late emblem never lands in an old room
   destroyed = false;
+  scale = 1;
 
   async mount(el: HTMLElement) {
     await this.app.init({ resizeTo: el, background: 0x16130f, antialias: true, resolution: Math.min(2, window.devicePixelRatio || 1), autoDensity: true });
@@ -37,6 +38,7 @@ export class CompoundScene {
       if (s.avatars !== prev.avatars) this.syncAvatars();
     });
     this.syncAvatars();
+    this.app.renderer.on("resize", () => this.fit());
     this.app.ticker.add(() => this.frame());
   }
 
@@ -81,17 +83,34 @@ export class CompoundScene {
       this.mats.addChild(g);
     }
     this.fit();
-    this.app.renderer.on("resize", () => this.fit());
   }
 
+  /** Scale the room to the screen. renderer.screen is in CSS pixels at any devicePixelRatio. */
   fit() {
     const L = S().layout;
     if (!L) return;
-    const w = this.app.renderer.width / this.app.renderer.resolution;
-    const h = this.app.renderer.height / this.app.renderer.resolution;
-    const s = Math.min(w / L.width, h / L.height);
-    this.world.scale.set(s);
-    this.world.position.set((w - L.width * s) / 2, (h - L.height * s) / 2);
+    const { width: w, height: h } = this.app.renderer.screen;
+    const contain = Math.min(w / L.width, h / L.height);
+    const cover = Math.max(w / L.width, h / L.height);
+    // On an upright phone the whole room would be a thin strip, so fill the
+    // screen instead and follow your figure. Wide screens show the whole room.
+    this.scale = h > w ? Math.min(cover, contain * 2.6) : contain;
+    this.world.scale.set(this.scale);
+    this.follow();
+  }
+
+  /** Center the view on you where the room is larger than the screen, never showing past its edges. */
+  follow() {
+    const st = S();
+    const L = st.layout;
+    if (!L) return;
+    const { width: w, height: h } = this.app.renderer.screen;
+    const s = this.scale;
+    const me = st.you ? st.avatars[st.you] : undefined;
+    const [mx, my] = me ? avatarPos(me, Date.now() + st.clockSkew) : [L.width / 2, L.height / 2];
+    const axis = (view: number, size: number, at: number) =>
+      size * s <= view ? (view - size * s) / 2 : Math.min(0, Math.max(view - size * s, view / 2 - at * s));
+    this.world.position.set(axis(w, L.width, mx), axis(h, L.height, my));
   }
 
   syncAvatars() {
@@ -138,6 +157,7 @@ export class CompoundScene {
       this.ritualRing(sp.ring, a);
     }
     this.people.sortableChildren = true;
+    this.follow();
     // Walking to a mat: kneel on arrival.
     if (this.kneelTarget && st.you && st.layout) {
       const me = st.avatars[st.you];
