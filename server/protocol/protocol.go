@@ -29,6 +29,7 @@ const (
 	OpPose        = 24
 	OpRitualSeen  = 25
 	OpConvergence = 26
+	OpActSeen     = 27 // {id, action}: a player in the room did an action (for its movement)
 	OpActResult   = 30
 	OpWorld       = 31
 	OpEvent       = 32

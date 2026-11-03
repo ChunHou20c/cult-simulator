@@ -1,7 +1,7 @@
 {
   "schema": "1.0",
   "id": "synanon",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "difficulty": "easy",
   "names": "real",
   "theme": {
@@ -88,5 +88,9 @@
       "text": "codex.fall.violence",
       "historical": true
     }
-  ]
+  ],
+  "animations": {
+    "open_rehab_house": "fix",
+    "play_the_game": "sit_talk"
+  }
 }

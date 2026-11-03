@@ -17,6 +17,8 @@ export interface Manifest {
   goal: { progress: string; label: string };
   sharedActions?: string[];
   actions: ActionDef[];
+  /** Movement per action id (or "ritual.<id>") for the 3D figure; see anim.ts. */
+  animations?: Record<string, string>;
 }
 export interface Mat { id: string; x: number; y: number }
 export interface CompoundLayout { width: number; height: number; mats: Mat[]; spawn: [number, number][] }

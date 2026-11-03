@@ -73,4 +73,6 @@ func TestValidatorCatches(t *testing.T) {
 	expectIssue(t, func(s string) string { return strings.Replace(s, `"schema": "1.0"`, `"schema": "1.9"`, 1) }, "engine supports")
 	expectIssue(t, func(s string) string { return strings.Replace(s, `"energy": 2`, `"energy": 9`, 1) }, "schema")
 	expectIssue(t, func(s string) string { return strings.Replace(s, `"cult.scrutiny < 70"`, `"cult.scrutiny + 1"`, 1) }, "must return bool")
+	expectIssue(t, func(s string) string { return strings.Replace(s, `"play_the_game": "sit_talk"`, `"play_cards": "sit_talk"`, 1) }, "not an action of this pack")
+	expectIssue(t, func(s string) string { return strings.Replace(s, `"play_the_game": "sit_talk"`, `"play_the_game": "backflip"`, 1) }, "schema")
 }

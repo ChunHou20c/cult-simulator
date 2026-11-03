@@ -19,5 +19,33 @@ for (let i = 0; i < 24; i++) {
 }
 avatars.me = { id: "me", name: "You (Still Lantern)", fx: compound.width / 2, fy: compound.height - 80, tx: compound.width / 2, ty: compound.height - 80, t0: 0, pose: "stand" };
 S().set({ you: "me", avatars, layout: compound, player: { cult } as any, packs: { [cult]: { manifest } as any }, convergence: { key: "ritual:chant", at: now + 300 } });
-new CompoundScene3D().mount(document.getElementById("c")!);
+const scene = new CompoundScene3D();
+scene.mount(document.getElementById("c")!);
+// ?zoom=0.4 moves the camera closer, to look at the figures.
+const zoom = Number(new URLSearchParams(location.search).get("zoom"));
+if (zoom) setTimeout(() => (scene.dist *= zoom), 200);
 (window as any).S = S;
+
+// Fake room activity: someone does an action or a ritual every so often.
+// ?clip=<id> makes every standing player do that one movement (to check it).
+const acts = [...(manifest.sharedActions ?? ["recruit", "fundraise", "ritual", "lie_low", "open_doors"]), ...manifest.actions.map((a: any) => a.id)];
+const rituals = ["bow", "chant", "beads", "candle"];
+const only = new URLSearchParams(location.search).get("clip");
+if (only) {
+  (manifest.animations ??= {}).recruit = only;
+  setTimeout(() => {
+    const st = S();
+    const next = { ...st.avatars };
+    for (const a of Object.values(next) as any[]) if (a.pose !== "kneel") next[a.id] = { ...a, fx: a.tx, fy: a.ty, act: { id: "recruit", at: Date.now() } };
+    st.set({ avatars: next });
+  }, 1500);
+} else {
+  setInterval(() => {
+    const st = S();
+    const ids = Object.keys(st.avatars);
+    const id = ids[Math.floor(Math.random() * ids.length)];
+    const a = st.avatars[id];
+    const ritual = Math.random() < 0.3;
+    st.set({ avatars: { ...st.avatars, [id]: ritual ? { ...a, ritual: { id: rituals[Math.floor(Math.random() * 4)], at: Date.now() } } : { ...a, act: { id: acts[Math.floor(Math.random() * acts.length)], at: Date.now() } } } });
+  }, 700);
+}

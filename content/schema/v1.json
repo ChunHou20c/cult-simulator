@@ -117,6 +117,14 @@
       "items": { "enum": ["recruit", "fundraise", "ritual", "lie_low", "open_doors"] }
     },
     "actions": { "type": "array", "maxItems": 6, "items": { "$ref": "#/definitions/action" } },
+    "animations": {
+      "description": "3D movement per action id or ritual.<id>. Display only. Values are ids from the web app's animation library (apps/web/src/anim.ts).",
+      "type": "object",
+      "propertyNames": { "pattern": "^(ritual\\.)?[a-z][a-z0-9_]{1,39}$" },
+      "additionalProperties": {
+        "enum": ["idle", "walk", "kneel", "sit_talk", "talk", "phone", "fold_arms", "dance", "fix", "interact", "pick_up", "carry", "plant", "harvest", "water", "chop", "open", "consume", "raise_hands", "lantern", "torch", "yes", "no", "crouch", "push"]
+      }
+    },
     "tick": { "type": "array", "items": { "$ref": "#/definitions/effect" } },
     "falls": { "type": "array", "items": { "$ref": "#/definitions/fall" } },
     "phases": {

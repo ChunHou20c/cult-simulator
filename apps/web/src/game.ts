@@ -175,6 +175,11 @@ function onMessage(op: number, d: any) {
       if (a) set({ avatars: { ...st.avatars, [d.id]: { ...a, ritual: { id: d.ritual, at: Date.now() } } } });
       break;
     }
+    case OP.ACT_SEEN: {
+      const a = st.avatars[d.id];
+      if (a) set({ avatars: { ...st.avatars, [d.id]: { ...a, act: { id: d.action, at: Date.now() } } } });
+      break;
+    }
     case OP.CONVERGENCE:
       set({ convergence: { key: d.key, at: Date.now() } });
       break;

@@ -41,6 +41,9 @@ type Manifest struct {
 	Falls         []FallDef           `json:"falls,omitempty"`
 	Phases        []PhaseDef          `json:"phases,omitempty"`
 	Events        []EventDef          `json:"events,omitempty"`
+	// Animations picks the 3D figure's movement per action id (or
+	// "ritual.<id>"). Display only: the server never reads it.
+	Animations map[string]string `json:"animations,omitempty"`
 }
 
 type StatDef struct {

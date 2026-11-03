@@ -495,6 +495,8 @@ func (s *state) act(d runtime.MatchDispatcher, pub *world.Published, pl *player,
 	if cooldownSec > 0 {
 		pl.cooldown[am.Action] = now + int64(cooldownSec)
 	}
+	// Everyone in the room sees the movement now, before the world settles it.
+	_ = d.BroadcastMessage(protocol.OpActSeen, world.Encode(map[string]any{"id": pl.pd.UserID, "action": am.Action}), nil, nil, true)
 	conv := !defector && s.converge(d, "act:"+am.Action, pl.pd.UserID, nowMs)
 	s.queue = append(s.queue, pending{user: pl.pd.UserID, seq: am.Seq, action: am.Action, energy: float64(cost), defector: defector,
 		req: engine.ActionReq{UserID: pl.pd.UserID, Name: pl.pd.Name, Cult: s.cult, Action: am.Action, Defector: defector,
