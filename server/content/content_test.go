@@ -70,11 +70,14 @@ func expectIssue(t *testing.T, change func(string) string, want string) {
 func TestValidatorCatches(t *testing.T) {
 	expectIssue(t, func(s string) string { return strings.Replace(s, `"cult.assets / 30000000"`, `"cult.nonexistent / 3"`, 1) }, "does every stat")
 	expectIssue(t, func(s string) string { return strings.Replace(s, `"open_rehab_house"`, `"poison_the_well"`, 1) }, "care")
-	expectIssue(t, func(s string) string { return strings.Replace(s, `"schema": "1.1"`, `"schema": "1.9"`, 1) }, "engine supports")
+	expectIssue(t, func(s string) string { return strings.Replace(s, `"schema": "1.2"`, `"schema": "1.9"`, 1) }, "engine supports")
 	expectIssue(t, func(s string) string { return strings.Replace(s, `"energy": 2`, `"energy": 9`, 1) }, "schema")
 	expectIssue(t, func(s string) string { return strings.Replace(s, `"cult.scrutiny < 70"`, `"cult.scrutiny + 1"`, 1) }, "must return bool")
 	expectIssue(t, func(s string) string { return strings.Replace(s, `"play_the_game": "sit_talk"`, `"play_cards": "sit_talk"`, 1) }, "not an action of this pack")
 	expectIssue(t, func(s string) string { return strings.Replace(s, `"play_the_game": "sit_talk"`, `"play_the_game": "backflip"`, 1) }, "schema")
+	// Outfits (schema 1.2).
+	expectIssue(t, func(s string) string { return strings.Replace(s, `"garment": "overalls"`, `"garment": "spacesuit"`, 1) }, "schema")
+	expectIssue(t, func(s string) string { return strings.Replace(s, `"beard": 0.15`, `"beard": 2`, 1) }, "schema")
 	// The three-button layout.
 	expectIssue(t, func(s string) string { return strings.Replace(s, `"slot": "devote"`, `"slot": "work"`, 1) }, "both use slot")
 	expectIssue(t, func(s string) string { return strings.Replace(s, `"game": "beat"`, `"game": "chess"`, 1) }, "schema")
