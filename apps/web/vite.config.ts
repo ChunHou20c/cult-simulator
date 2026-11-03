@@ -6,7 +6,9 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: "autoUpdate",
+      // src/update.ts registers the worker and decides when to reload.
+      registerType: "prompt",
+      injectRegister: false,
       manifest: {
         name: "Cult Simulator",
         short_name: "Cults",
@@ -17,6 +19,8 @@ export default defineConfig({
         icons: [{ src: "/icon.svg", sizes: "any", type: "image/svg+xml" }],
       },
       workbox: {
+        // Take over the first visit right away so its models and music get cached.
+        clientsClaim: true,
         // App shell is precached; packs are cached by their hashed URL forever.
         globPatterns: ["**/*.{js,css,html,svg}"],
         // config.js is per-deployment runtime config, never precached.

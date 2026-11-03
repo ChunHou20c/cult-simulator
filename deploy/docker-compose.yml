@@ -63,10 +63,10 @@ services:
     restart: unless-stopped
     profiles: ["web"]
     environment:
-      NAKAMA_HOST: ${WEB_NAKAMA_HOST:-}
-      NAKAMA_PORT: ${WEB_NAKAMA_PORT:-}
-      NAKAMA_SSL: ${WEB_NAKAMA_SSL:-}
-      NAKAMA_SERVER_KEY: ${NAKAMA_SERVER_KEY}
+      CS_NAKAMA_HOST: ${WEB_NAKAMA_HOST:-}
+      CS_NAKAMA_PORT: ${WEB_NAKAMA_PORT:-}
+      CS_NAKAMA_SSL: ${WEB_NAKAMA_SSL:-}
+      CS_NAKAMA_SERVER_KEY: ${NAKAMA_SERVER_KEY}
     ports:
       - "127.0.0.1:8080:8080"
 
