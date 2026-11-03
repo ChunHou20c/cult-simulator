@@ -3,7 +3,7 @@ import { CompoundScene } from "../CompoundScene";
 import { act, backToLobby, defect, ritual, rise, switchCult } from "../game";
 import { actionDef, DEFECTOR_ACTIONS, t } from "../packs";
 import { cultView, energyNow, useStore } from "../store";
-import { Countdown, Emblem, ProgressBar, StatList, useNow } from "./widgets";
+import { Countdown, Emblem, MusicButton, ProgressBar, StatList, useNow } from "./widgets";
 import { Ticker } from "./Ticker";
 import { canUse3D, setView, useView, type View } from "../view";
 
@@ -107,6 +107,7 @@ export function Compound() {
           {Array.from({ length: engine.maxEnergy }, (_, i) => <span key={i} className={`pip ${i < energy ? "on" : ""}`} />)}
           <span className="energy-num mono" aria-hidden="true">{energy}⚡</span>
         </div>
+        <MusicButton />
         {canUse3D() && (
           <button className="round view-toggle" onClick={() => setView(view === "3d" ? "2d" : "3d")} aria-label={view === "3d" ? "Switch to the 2D view" : "Switch to the 3D view"} title={view === "3d" ? "2D view" : "3D view"}>
             {view === "3d" ? "2D" : "3D"}

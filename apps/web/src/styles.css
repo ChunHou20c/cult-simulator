@@ -86,6 +86,9 @@ button.danger { color: var(--bad); }
 .round { width: 40px; height: 40px; border-radius: 50%; padding: 0; flex: none; font-weight: 700; background: rgba(33,28,23,0.8); color: #f3eadb; border-color: rgba(255,255,255,0.15); }
 .round.on { background: var(--gold); color: #1b1408; }
 .round.view-toggle { font-size: 13px; letter-spacing: 0.02em; }
+.round.music { font-size: 18px; position: relative; }
+.round.music.off { opacity: 0.55; }
+.round.music.off::after { content: ""; position: absolute; left: 9px; right: 9px; top: 50%; border-top: 2px solid currentColor; transform: rotate(-45deg); }
 .chip { flex: 0 1 260px; min-width: 0; background: rgba(33,28,23,0.8); color: #f3eadb; border-radius: 12px; padding: 6px 12px 8px; }
 .chip-name .emblem, .rival-name .emblem { margin-right: 6px; position: relative; top: -1px; }
 .chip-name { display: block; font-size: 0.85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
@@ -185,3 +188,4 @@ button.danger { color: var(--bad); }
 }
 .gate .help-toggle { margin-top: 18px; background: var(--panel); color: var(--text); border-color: var(--line); }
 .gate .help-toggle.on { background: var(--gold); color: #1b1408; }
+.links { display: flex; align-items: center; gap: 12px; }

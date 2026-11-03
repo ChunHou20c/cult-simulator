@@ -1,6 +1,14 @@
 import { useEffect, useState } from "react";
 import { CORE_STATS, formatStat, t, type Pack, type StatDef } from "../packs";
 import type { CultView } from "../store";
+import { setMuted, useMuted } from "../music";
+
+export function MusicButton() {
+  const muted = useMuted();
+  return (
+    <button className={`round music ${muted ? "off" : ""}`} onClick={() => setMuted(!muted)} aria-label={muted ? "Play music" : "Mute music"} aria-pressed={!muted} title={muted ? "Play music" : "Mute music"}>♪</button>
+  );
+}
 
 export function useNow(ms = 1000) {
   const [now, setNow] = useState(Date.now());

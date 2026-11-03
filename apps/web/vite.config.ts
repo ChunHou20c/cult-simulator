@@ -29,6 +29,12 @@ export default defineConfig({
             options: { cacheName: "models", expiration: { maxEntries: 20 } },
           },
           {
+            // Background music: each track is fetched when first heard, then served offline.
+            urlPattern: ({ url }) => url.pathname.startsWith("/music/"),
+            handler: "CacheFirst",
+            options: { cacheName: "music", expiration: { maxEntries: 10 }, rangeRequests: true },
+          },
+          {
             urlPattern: ({ url }) => url.pathname.startsWith("/packs/"),
             handler: "CacheFirst",
             options: { cacheName: "packs", expiration: { maxEntries: 200 } },
