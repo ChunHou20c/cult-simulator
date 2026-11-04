@@ -24,23 +24,31 @@ var SharedActionIDs = []string{"recruit", "fundraise", "ritual", "lie_low", "ope
 // DefectorActionIDs belong to the engine and act on a defector's former cult.
 var DefectorActionIDs = []string{"gather_evidence", "call_family", "talk_to_journalist"}
 
+// DefectorGames is the mini game each defector action plays (from the
+// server/minigame catalog), the same in every cult.
+var DefectorGames = map[string]string{
+	"gather_evidence":    "timing",
+	"call_family":        "beat",
+	"talk_to_journalist": "flick",
+}
+
 type Manifest struct {
-	Schema        string              `json:"schema"`
-	ID            string              `json:"id"`
-	Version       string              `json:"version"`
-	Difficulty    string              `json:"difficulty"`
-	Names         string              `json:"names,omitempty"`
-	Theme         map[string]string   `json:"theme,omitempty"`
-	Stats         map[string]StatDef  `json:"stats,omitempty"`
-	Initial       map[string]float64  `json:"initial,omitempty"`
-	Goal          GoalDef             `json:"goal"`
-	Guard         string              `json:"guard,omitempty"`
-	SharedActions []string            `json:"sharedActions,omitempty"`
-	Actions       []ActionDef         `json:"actions"`
-	Tick          []EffectDef         `json:"tick,omitempty"`
-	Falls         []FallDef           `json:"falls,omitempty"`
-	Phases        []PhaseDef          `json:"phases,omitempty"`
-	Events        []EventDef          `json:"events,omitempty"`
+	Schema        string             `json:"schema"`
+	ID            string             `json:"id"`
+	Version       string             `json:"version"`
+	Difficulty    string             `json:"difficulty"`
+	Names         string             `json:"names,omitempty"`
+	Theme         map[string]string  `json:"theme,omitempty"`
+	Stats         map[string]StatDef `json:"stats,omitempty"`
+	Initial       map[string]float64 `json:"initial,omitempty"`
+	Goal          GoalDef            `json:"goal"`
+	Guard         string             `json:"guard,omitempty"`
+	SharedActions []string           `json:"sharedActions,omitempty"`
+	Actions       []ActionDef        `json:"actions"`
+	Tick          []EffectDef        `json:"tick,omitempty"`
+	Falls         []FallDef          `json:"falls,omitempty"`
+	Phases        []PhaseDef         `json:"phases,omitempty"`
+	Events        []EventDef         `json:"events,omitempty"`
 	// Animations picks the 3D figure's movement per action id (or
 	// "ritual.<id>"). Display only: the server never reads it.
 	Animations map[string]string `json:"animations,omitempty"`
@@ -209,9 +217,9 @@ type Pack struct {
 
 // Compound is the walkable room layout for a cult.
 type Compound struct {
-	Width  float64 `json:"width"`
-	Height float64 `json:"height"`
-	Mats   []Mat   `json:"mats"`
+	Width  float64      `json:"width"`
+	Height float64      `json:"height"`
+	Mats   []Mat        `json:"mats"`
 	Spawn  [][2]float64 `json:"spawn"`
 }
 

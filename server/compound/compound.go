@@ -76,14 +76,15 @@ type pending struct {
 // round is a player's open mini game: the server picked the seed, so only
 // it knows the layout the inputs are scored against.
 type round struct {
-	nonce  string
-	seed   uint32
-	game   string
-	action string
-	seq    int64
-	issued int64 // ms
-	cost   float64
-	conv   bool
+	nonce    string
+	seed     uint32
+	game     string
+	action   string
+	seq      int64
+	issued   int64 // ms
+	cost     float64
+	conv     bool
+	defector bool
 }
 
 // roundTTL: a round not finished by then is scored as a skip.
@@ -511,8 +512,13 @@ func (s *state) startRound(d runtime.MatchDispatcher, pub *world.Published, pl *
 	if pl.round != nil {
 		s.finishRound(pl, nil, true, nowMs)
 	}
+	// A defector's round plays one of the defector actions; anyone else's
+	// plays their cult's action.
+	defector := pl.pd.Defected
 	game := ""
-	if pub != nil {
+	if defector {
+		game = content.DefectorGames[am.Action]
+	} else if pub != nil {
 		if p := pub.Content.Packs[s.cult]; p != nil {
 			if a := p.Actions[am.Action]; a != nil {
 				game = a.Game
@@ -520,10 +526,10 @@ func (s *state) startRound(d runtime.MatchDispatcher, pub *world.Published, pl *
 		}
 	}
 	if game == "" {
-		s.act(d, pub, pl, am, false, nowMs)
+		s.act(d, pub, pl, am, defector, nowMs)
 		return
 	}
-	cost, ok := s.begin(d, pub, pl, am, false, nowMs)
+	cost, ok := s.begin(d, pub, pl, am, defector, nowMs)
 	if !ok {
 		return
 	}
@@ -531,7 +537,10 @@ func (s *state) startRound(d runtime.MatchDispatcher, pub *world.Published, pl *
 	_, _ = rand.Read(b[:])
 	r := &round{nonce: hex.EncodeToString(b[4:]), seed: binary.LittleEndian.Uint32(b[:4]), game: game, action: am.Action,
 		seq: am.Seq, issued: nowMs, cost: float64(cost)}
-	r.conv = s.converge(d, "act:"+am.Action, pl.pd.UserID, nowMs)
+	r.defector = defector
+	if !defector {
+		r.conv = s.converge(d, "act:"+am.Action, pl.pd.UserID, nowMs)
+	}
 	pl.round = r
 	_ = d.BroadcastMessage(protocol.OpActChallenge, world.Encode(map[string]any{
 		"clientSeq": am.Seq, "nonce": r.nonce, "seed": r.seed, "game": r.game, "action": r.action}), []runtime.Presence{pl.p}, nil, true)
@@ -556,9 +565,9 @@ func (s *state) finishRound(pl *player, inputs []minigame.Input, skip bool, nowM
 		}
 		q = w.Note(q)
 	}
-	s.queue = append(s.queue, pending{user: pl.pd.UserID, seq: r.seq, action: r.action, energy: r.cost, grades: grades,
-		req: engine.ActionReq{UserID: pl.pd.UserID, Name: pl.pd.Name, Cult: s.cult, Action: r.action,
-			Converged: r.conv, At: nowMs / 1000, Played: true, Quality: q}})
+	s.queue = append(s.queue, pending{user: pl.pd.UserID, seq: r.seq, action: r.action, energy: r.cost, grades: grades, defector: r.defector,
+		req: engine.ActionReq{UserID: pl.pd.UserID, Name: pl.pd.Name, Cult: s.cult, Action: r.action, Defector: r.defector,
+			Evidence: pl.pd.Evidence, Converged: r.conv, At: nowMs / 1000, Played: true, Quality: q}})
 }
 
 // begin checks energy, cooldown and the action's requires flag against the

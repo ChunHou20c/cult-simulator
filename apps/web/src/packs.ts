@@ -10,11 +10,18 @@ export type Widget = "bar" | "counter" | "currency" | "months";
 export interface StatDef { widget: Widget; label: string; min?: number; max?: number }
 export type Slot = "recruit" | "work" | "devote";
 export const SLOTS: Slot[] = ["recruit", "work", "devote"];
+/** Every action icon: the three slots, and the defector's three. */
+export type IconKind = Slot | "evidence" | "family" | "journalist";
 export interface ActionDef {
   id: string; energy?: number; cooldownSec?: number; requires?: string;
   /** Schema 1.1: which of the three icon buttons, its mini game and what the game shows. */
   slot?: Slot; game?: "flick" | "timing" | "beat"; skin?: { target?: string; item?: string; zone?: string };
+  /** Client only: the icon, for actions that are not in a slot (defector actions). */
+  icon?: IconKind;
 }
+
+/** A slotted or defector action's icon. */
+export const iconOf = (a: ActionDef): IconKind => a.icon ?? a.slot ?? "work";
 export interface Manifest {
   id: string;
   version: string;
@@ -148,6 +155,13 @@ export const CORE_STATS: Record<string, StatDef> = {
 };
 
 export const DEFECTOR_ACTIONS = ["gather_evidence", "call_family", "talk_to_journalist"];
+
+/** The defector's three icon actions; games match content.DefectorGames on the server. */
+export const DEFECTOR_DEFS: ActionDef[] = [
+  { id: "gather_evidence", icon: "evidence", game: "timing", energy: 1, cooldownSec: 20, skin: { zone: "📷" } },
+  { id: "call_family", icon: "family", game: "beat", energy: 1, cooldownSec: 20, skin: { zone: "☎️" } },
+  { id: "talk_to_journalist", icon: "journalist", game: "flick", energy: 1, cooldownSec: 20, skin: { target: "🎙️", item: "📁" } },
+];
 
 /** Energy and cooldown for any action: the pack's own, or the engine's shared list from hello. */
 export function actionDef(pack: Pack, id: string, shared: { id: string; energy: number; cooldownSec: number }[]): { energy: number; cooldownSec: number } {

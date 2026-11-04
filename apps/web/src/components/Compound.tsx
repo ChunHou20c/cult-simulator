@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { CompoundScene } from "../CompoundScene";
 import { act, actStart, backToLobby, defect, ritual, rise, switchCult } from "../game";
-import { actionDef, DEFECTOR_ACTIONS, slotted, t, type ActionDef, type Pack, type Slot } from "../packs";
+import { actionDef, DEFECTOR_ACTIONS, DEFECTOR_DEFS, iconOf, slotted, t, type ActionDef, type IconKind, type Pack } from "../packs";
 import { MiniGame } from "./MiniGame";
 import { gradeMark, SlotIcon } from "./SlotIcon";
 import { cultView, energyNow, useStore } from "../store";
@@ -84,16 +84,18 @@ export function Compound() {
   // The three icon buttons (packs with slots). A ring shows the cooldown,
   // dots the energy cost; a long press shows the name and what it does.
   const slotButton = (a: ActionDef) => {
-    const id = a.id, slot = a.slot as Slot;
-    const def = actionDef(pack, id, shared);
+    const id = a.id, slot = iconOf(a);
+    const def = defected ? { energy: a.energy ?? 1, cooldownSec: a.cooldownSec ?? 0 } : actionDef(pack, id, shared);
     const cdLeft = Math.max(0, (cooldowns[id] ?? 0) - serverNow);
     const cdFrac = def.cooldownSec > 0 ? Math.min(1, cdLeft / def.cooldownSec) : 0;
     const waiting = pending.some((p) => p.action === id);
-    const disabled = !live || waiting || cdLeft > 0 || energy < def.energy || cult.can?.[id] === false || !!st.round;
+    const can = defected ? id !== "talk_to_journalist" || player.evidence >= engine.evidenceForJournalist : cult.can?.[id] !== false;
+    const disabled = !live || waiting || cdLeft > 0 || energy < def.energy || !can || !!st.round;
     const conv = convergence && Date.now() - convergence.at < 2500 && convergence.key === "act:" + id;
     return (
       <SlotButton key={id} pack={pack} id={id} slot={slot} cost={def.energy} cdFrac={cdFrac} waiting={waiting} disabled={disabled} conv={!!conv}
-        showLabel={newPlayer} onPress={() => { actStart(id); noteAction(); }} />
+        showLabel={newPlayer} onPress={() => { actStart(id); noteAction(); }}
+        badge={id === "talk_to_journalist" ? `${Math.min(player.evidence, engine.evidenceForJournalist)}/${engine.evidenceForJournalist}` : undefined} />
     );
   };
 
@@ -110,8 +112,8 @@ export function Compound() {
   // Signature actions first, then the shared ones.
   const signature = pack.manifest.actions.map((a) => a.id).filter((id) => pack.actions.includes(id));
   const actionIds = defected ? DEFECTOR_ACTIONS : [...signature, ...pack.actions.filter((a) => !signature.includes(a))];
-  const slots = defected ? null : slotted(pack);
-  const roundDef = st.round && pack.manifest.actions.find((a) => a.id === st.round!.action);
+  const slots = defected ? DEFECTOR_DEFS : slotted(pack);
+  const roundDef = st.round && (slots ?? pack.manifest.actions).find((a) => a.id === st.round!.action);
   const showResult = lastResult && Date.now() - lastResult.at < 4000;
   const canSwitch = cult.status !== "standing" && world.phase === "live" && !player.switchedFrom && !defected && standing.length > 0;
 
@@ -156,7 +158,8 @@ export function Compound() {
           )}
           <dl className="glossary">
             {(slots ? slots.map((a) => a.id) : actionIds).map((id) => {
-              const slot = slots?.find((a) => a.id === id)?.slot as Slot | undefined;
+              const a = slots?.find((x) => x.id === id);
+              const slot = a && iconOf(a);
               return <div key={id}><dt>{slot && <SlotIcon slot={slot} size={16} />} {t(pack, `action.${id}`)}</dt><dd>{t(pack, `action.${id}.desc`)}</dd></div>;
             })}
           </dl>
@@ -231,9 +234,9 @@ function useFirstActions(): [boolean, () => void] {
   }];
 }
 
-const SHORT: Record<Slot, string> = { recruit: "Recruit", work: "Work", devote: "Devote" };
+const SHORT: Record<IconKind, string> = { recruit: "Recruit", work: "Work", devote: "Devote", evidence: "Evidence", family: "Family", journalist: "Press" };
 
-function SlotButton(p: { pack: Pack; id: string; slot: Slot; cost: number; cdFrac: number; waiting: boolean; disabled: boolean; conv: boolean; showLabel: boolean; onPress: () => void }) {
+function SlotButton(p: { pack: Pack; id: string; slot: IconKind; badge?: string; cost: number; cdFrac: number; waiting: boolean; disabled: boolean; conv: boolean; showLabel: boolean; onPress: () => void }) {
   const [tip, setTip] = useState(false);
   const timer = useRef<number | undefined>(undefined);
   const long = useRef(false);
@@ -256,6 +259,7 @@ function SlotButton(p: { pack: Pack; id: string; slot: Slot; cost: number; cdFra
           {p.cdFrac > 0 && <circle cx="36" cy="36" r="34" strokeDasharray={`${C * p.cdFrac} ${C}`} transform="rotate(-90 36 36)" />}
         </svg>
         {p.waiting && <span className="spinner slot-spin" aria-hidden="true" />}
+        {p.badge && <span className="slot-badge mono" aria-hidden="true">{p.badge}</span>}
       </button>
       <span className="slot-cost" aria-hidden="true">{"•".repeat(p.cost)}</span>
       {p.showLabel && <span className="slot-label">{SHORT[p.slot]}</span>}
