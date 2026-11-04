@@ -27,6 +27,10 @@ func perfectInputs(t *testing.T, game string, seed uint32) []Input {
 		for _, b := range l.Beats {
 			in = append(in, Input{T: b})
 		}
+	case Snuff:
+		for _, c := range l.Candles {
+			in = append(in, Input{T: c.Start + 100, X: c.X, Y: c.Y})
+		}
 	case Flick:
 		for _, s := range l.Strangers {
 			// Aim straight up at a moment the stranger will be at x = 0.5.
@@ -144,5 +148,40 @@ func TestLayoutGolden(t *testing.T) {
 	}
 	if l := NewLayout(Timing, 777); l.Zones[2].C != 0.3154323977883905 {
 		t.Fatalf("timing layout changed: %v", l)
+	}
+}
+
+func TestSnuffLateAndWrongTaps(t *testing.T) {
+	l := NewLayout(Snuff, 99)
+	var in []Input
+	for _, c := range l.Candles {
+		in = append(in, Input{T: c.Start + c.BurnMs*0.8, X: c.X, Y: c.Y}) // late: Good
+	}
+	q, grades, _ := Score(Snuff, 99, in, 1e9)
+	if q != Good {
+		t.Fatalf("late taps: q=%v grades=%v", q, grades)
+	}
+	// A tap on an unlit spot (the centre) costs a little.
+	in = append(in, Input{T: l.Candles[0].Start + 400, X: 0.5, Y: 0.5})
+	if q2, _, _ := Score(Snuff, 99, in, 1e9); q2 >= q {
+		t.Fatalf("a wrong tap should cost: %v >= %v", q2, q)
+	}
+	// Too late: the candle burned down.
+	c := l.Candles[0]
+	if q3, _, _ := Score(Snuff, 99, []Input{{T: c.Start + c.BurnMs + 50, X: c.X, Y: c.Y}}, 1e9); q3 != 0 {
+		t.Fatalf("a burned-down candle scored %v", q3)
+	}
+}
+
+func TestSnuffGolden(t *testing.T) {
+	l := NewLayout(Snuff, 777)
+	// Mirrored in scripts/check-minigame.mjs.
+	if l.Candles[2].Start != 1580.9381357906386 || l.Candles[2].X != 0.2228718707889797 {
+		t.Fatalf("snuff layout changed: %+v", l.Candles[2])
+	}
+	for k := 1; k < len(l.Candles); k++ {
+		if l.Candles[k].X == l.Candles[k-1].X && l.Candles[k].Y == l.Candles[k-1].Y {
+			t.Fatalf("candles %d and %d share a spot", k-1, k)
+		}
 	}
 }

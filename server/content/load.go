@@ -247,7 +247,7 @@ func (l *Loader) LoadPack(dir string) (*Pack, error) {
 		}
 	}
 	for _, d := range m.Actions {
-		if _, dup := p.Actions[d.ID]; dup || isDefectorAction(d.ID) {
+		if _, dup := p.Actions[d.ID]; dup || isDefectorAction(d.ID) || d.ID == RiteActionID {
 			add("action id %q clashes with an engine action or another action", d.ID)
 			continue
 		}
@@ -260,6 +260,13 @@ func (l *Loader) LoadPack(dir string) (*Pack, error) {
 		p.Order = append(p.Order, a.ID)
 	}
 	slotLint(p, add)
+	if m.ForbiddenRite {
+		if !m.Fictional {
+			add(`care: "forbiddenRite" needs "fictional": true (real groups are never shown doing this)`)
+		}
+		p.Actions[riteAction.ID] = riteAction
+		p.Order = append(p.Order, riteAction.ID)
+	}
 	if p.Tick, err = compileEffects(m.Tick); err != nil {
 		add("tick: %v", err)
 	}
@@ -533,6 +540,9 @@ func needKey(p *Pack, key string, add func(string, ...any)) {
 // against action ids and action strings.
 var harmVerbs = regexp.MustCompile(`(?i)\b(poison\w*|shoot\w*|shot|kill\w*|murder\w*|abus\w*|assault\w*|rape\w*|stab\w*|bomb\w*|attack\w*|tortur\w*|kidnap\w*|beat(ing)?|suicide|massacre\w*|gas(sing)?|arson|burn(ing)?\s+down|execut\w*|sarin|cyanide)\b`)
 
+// sacrifice: only fictional packs may use the theme.
+var sacrifice = regexp.MustCompile(`(?i)\bsacrific\w*`)
+
 // historicalReasons are fall reasons that name a real tragedy; such falls
 // must be marked historical with their real outcome stated in the codex.
 func careLint(p *Pack, add func(string, ...any)) {
@@ -547,6 +557,17 @@ func careLint(p *Pack, add func(string, ...any)) {
 			if harmVerbs.MatchString(p.Strings[k]) {
 				add("care: string %q describes harm: %q", k, p.Strings[k])
 			}
+		}
+	}
+	// Real-world packs never describe sacrifice, in any string or the codex.
+	if !p.Manifest.Fictional {
+		for k, v := range p.Strings {
+			if sacrifice.MatchString(v) {
+				add("care: string %q mentions sacrifice, which only fictional packs may: %q", k, v)
+			}
+		}
+		if b, err := os.ReadFile(filepath.Join(p.Dir, "codex", "en.md")); err == nil && sacrifice.Match(b) {
+			add("care: codex/en.md mentions sacrifice, which only fictional packs may")
 		}
 	}
 	for _, f := range p.Manifest.Falls {

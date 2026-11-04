@@ -11,7 +11,7 @@ import (
 // understands. Within major 1 changes are additive only.
 const (
 	SchemaMajor = 1
-	SchemaMinor = 2
+	SchemaMinor = 3
 )
 
 // Core stats every cult has. Packs may add their own.
@@ -55,6 +55,16 @@ type Manifest struct {
 	// Outfit is what members wear in the compound (schema 1.2). Display
 	// only: the server never reads it, it just passes it to clients.
 	Outfit *OutfitDef `json:"outfit,omitempty"`
+	// Fictional marks an invented cult (schema 1.3). Real-world packs may
+	// not use the forbidden rite or describe sacrifice (care lint).
+	Fictional bool `json:"fictional,omitempty"`
+	// ForbiddenRite turns on the engine's forbidden rite pressure (schema
+	// 1.3): at high paranoia an inner circle demands a rite, players refuse
+	// it with the refuse_rite action, and an unrefused demand is a fall.
+	// Only fictional packs may set it.
+	ForbiddenRite bool `json:"forbiddenRite,omitempty"`
+	// ContentNote is a short warning shown on the lobby card (schema 1.3).
+	ContentNote string `json:"contentNote,omitempty"`
 }
 
 type OutfitDef struct {
@@ -165,6 +175,9 @@ type Action struct {
 	Phases      map[string]bool
 	Slot        string // "" for unslotted actions
 	Game        string // mini game id, "" for none
+	// Rite marks the engine's refuse_rite action: it is only available
+	// while a forbidden rite demand stands.
+	Rite bool
 }
 
 type Fall struct {

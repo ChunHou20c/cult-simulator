@@ -74,6 +74,9 @@
     }
   },
   "properties": {
+    "fictional": { "type": "boolean", "description": "Since 1.3. An invented cult. Only fictional packs may use forbiddenRite or mention sacrifice." },
+    "forbiddenRite": { "type": "boolean", "description": "Since 1.3. Turns on the engine's forbidden rite pressure: at high paranoia an inner circle demands a rite; players refuse it (refuse_rite, snuff mini game) or the cult falls. Needs fictional: true." },
+    "contentNote": { "type": "string", "maxLength": 80, "description": "Since 1.3. Short content warning shown on the lobby card." },
     "schema": { "type": "string", "pattern": "^1\\.[0-9]+$" },
     "id": { "$ref": "#/definitions/id" },
     "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },

@@ -3,7 +3,7 @@
 // sends them. Grades shown here are a preview; the server scores the inputs.
 import { useEffect, useRef, useState } from "react";
 import { finishRound } from "../game";
-import { FLICK_X, FLICK_Y, FLICK_SPEED, flickGrade, layout, needle, spaced, strangerX, timingGrade, type Input, type Layout } from "../minigame/core";
+import { FLICK_X, FLICK_Y, FLICK_SPEED, flickGrade, layout, needle, SNUFF_RING, SNUFF_SPOTS, snuffGrade, snuffHit, spaced, strangerX, timingGrade, type Input, type Layout } from "../minigame/core";
 import { iconOf, type ActionDef } from "../packs";
 import type { Round } from "../store";
 import { gradeMark, SlotIcon } from "./SlotIcon";
@@ -18,6 +18,7 @@ export function MiniGame({ round, def }: { round: Round; def: ActionDef }) {
   const box = useRef<SVGSVGElement>(null);
   const down = useRef<{ x: number; y: number } | null>(null);
   const done = useRef(false);
+  const out = useRef<boolean[]>((l.candles ?? []).map(() => false)); // snuff: candles already out
   const t = performance.now() - round.at;
 
   const finish = (skip = false) => {
@@ -36,6 +37,7 @@ export function MiniGame({ round, def }: { round: Round; def: ActionDef }) {
       if (l.game === "timing" && used >= 3) return finish();
       if (l.game === "flick" && used >= 3 && now > inputs.current[inputs.current.length - 1].t + 700) return finish();
       if (l.game === "beat" && now > l.beats![5] + 260) return finish();
+      if (l.game === "snuff" && out.current.every(Boolean)) return finish();
       frame((n) => n + 1);
       raf = requestAnimationFrame(loop);
     };
@@ -54,6 +56,16 @@ export function MiniGame({ round, def }: { round: Round; def: ActionDef }) {
     const p = toUnits(e);
     if (l.game === "flick") {
       down.current = p;
+      return;
+    }
+    if (l.game === "snuff") {
+      const kept = spaced("snuff", inputs.current);
+      const i = { t: at, x: p.x, y: p.y };
+      inputs.current.push(i);
+      if (spaced("snuff", inputs.current).length === kept.length) return;
+      const k = snuffHit(l, out.current, i);
+      if (k >= 0) out.current[k] = true;
+      setPops((ps) => [...ps, { x: p.x, y: p.y - 0.06, g: k >= 0 ? snuffGrade(l.candles![k], at) : 0, at: performance.now() }]);
       return;
     }
     const kept = spaced(l.game, inputs.current);
@@ -104,6 +116,7 @@ export function MiniGame({ round, def }: { round: Round; def: ActionDef }) {
         {l.game === "flick" && <Flick l={l} t={t} inputs={spaced("flick", inputs.current)} skin={skin} />}
         {l.game === "timing" && <Timing l={l} t={t} next={spaced("timing", inputs.current).length} skin={skin} />}
         {l.game === "beat" && <Beat l={l} t={t} skin={skin} />}
+        {l.game === "snuff" && <Snuff l={l} t={t} out={out.current} />}
         {pops.filter((p) => now >= p.at && now - p.at < 700).map((p, i) => (
           <text key={i} x={p.x * 100} y={p.y * 100 - (now - p.at) / 60} className={`mg-pop g${Math.round(p.g * 10)}`} textAnchor="middle">{gradeMark(p.g)}</text>
         ))}
@@ -168,6 +181,35 @@ function Beat({ l, t, skin }: { l: Layout; t: number; skin: ActionDef["skin"] & 
       {lead > -140 && lead < 800 && <circle cx={50} cy={50} r={14 + Math.max(0, lead) / 22} className="mg-approach" />}
       <circle cx={50} cy={50} r={pulse ? 15.5 : 14} className="mg-drum" />
       <text x={50} y={54} textAnchor="middle" className="mg-emoji">{skin.zone ?? "●"}</text>
+    </g>
+  );
+}
+
+// Snuff: candles on a ring are lit one by one; tap each out before it burns
+// down. Unlit spots stand dim, a lit flame shrinks as it burns.
+function Snuff({ l, t, out }: { l: Layout; t: number; out: boolean[] }) {
+  const spots = Array.from({ length: SNUFF_SPOTS }, (_, k) => {
+    const a = (k / SNUFF_SPOTS) * 2 * Math.PI - Math.PI / 2;
+    return { x: 50 + SNUFF_RING * 100 * Math.cos(a), y: 50 + SNUFF_RING * 100 * Math.sin(a) };
+  });
+  return (
+    <g>
+      <circle cx={50} cy={50} r={SNUFF_RING * 100} className="mg-ring" />
+      {spots.map((s, k) => <rect key={k} x={s.x - 2} y={s.y - 1} width={4} height={7} rx={0.8} className="mg-candle" />)}
+      {l.candles!.map((c, k) => {
+        const age = t - c.start;
+        if (age < 0) return null;
+        if (out[k]) return age < c.burnMs + 600 ? <text key={k} x={c.x * 100} y={c.y * 100 - 3} textAnchor="middle" className="mg-smoke">~</text> : null;
+        if (age > c.burnMs) return null;
+        const f = 1 - age / c.burnMs;
+        return (
+          <g key={k}>
+            <circle cx={c.x * 100} cy={c.y * 100 - 3} r={7} className="mg-target" />
+            <ellipse cx={c.x * 100} cy={c.y * 100 - 2 - 2.5 * f} rx={1.2 + 0.8 * f} ry={2 + 2.5 * f} className="mg-flame" />
+          </g>
+        );
+      })}
+      <text x={50} y={53} textAnchor="middle" className="mg-count">{out.filter(Boolean).length}/{out.length}</text>
     </g>
   );
 }

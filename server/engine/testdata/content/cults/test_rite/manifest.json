@@ -1,0 +1,17 @@
+{
+  "schema": "1.3",
+  "id": "test_rite",
+  "version": "0.0.1",
+  "difficulty": "hard",
+  "fictional": true,
+  "forbiddenRite": true,
+  "contentNote": "Dark themes: ritual, coercion",
+  "stats": {
+    "devotion": { "min": 0, "max": 100, "widget": "bar", "label": "stat.devotion" }
+  },
+  "initial": { "paranoia": 60 },
+  "goal": { "progress": "cult.devotion / 100", "label": "goal.x" },
+  "actions": [
+    { "id": "chant", "effects": [{ "stat": "devotion", "add": 1 }, { "stat": "paranoia", "add": 5 }] }
+  ]
+}

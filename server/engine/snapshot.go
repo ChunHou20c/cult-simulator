@@ -1,6 +1,10 @@
 package engine
 
-import "sort"
+import (
+	"sort"
+
+	"github.com/cult-simulator/server/content"
+)
 
 // AddPlayer changes a cult's player count (join, switch, defect).
 func (e *Engine) AddPlayer(d *WorldDay, cult string, delta int) {
@@ -35,6 +39,15 @@ type CultView struct {
 	Stats      map[string]float64 `json:"stats" msgpack:"stats"`
 	Buffs      []Buff             `json:"buffs" msgpack:"buffs"`
 	Can        map[string]bool    `json:"can" msgpack:"can"` // per action: requires holds now
+	Rite       *RiteView          `json:"rite,omitempty" msgpack:"rite,omitempty"`
+}
+
+// RiteView is a standing forbidden rite demand: when it falls due and how
+// much resolve the cult has built against it.
+type RiteView struct {
+	Deadline int64   `json:"deadline" msgpack:"deadline"`
+	Resolve  float64 `json:"resolve" msgpack:"resolve"`
+	Need     float64 `json:"need" msgpack:"need"`
 }
 
 // Snapshot is the world as clients see it, about 1 KB per few cults.
@@ -71,6 +84,9 @@ func (e *Engine) Snapshot(d *WorldDay, now int64) *Snapshot {
 			if b.Until > now {
 				v.Buffs = append(v.Buffs, b)
 			}
+		}
+		if cs.Rite != nil && cs.Rite.Active && cs.Status == StatusStanding {
+			v.Rite = &RiteView{Deadline: cs.Rite.Deadline, Resolve: round(cs.Rite.Resolve, 2), Need: content.RiteResolveNeed}
 		}
 		if p := e.C.Packs[id]; p != nil {
 			for _, a := range p.Order {

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { CompoundScene } from "../CompoundScene";
 import { act, actStart, backToLobby, defect, ritual, rise, switchCult } from "../game";
-import { actionDef, DEFECTOR_ACTIONS, DEFECTOR_DEFS, iconOf, slotted, t, type ActionDef, type IconKind, type Pack } from "../packs";
+import { actionDef, DEFECTOR_ACTIONS, DEFECTOR_DEFS, iconOf, RITE_DEF, slotted, t, type ActionDef, type IconKind, type Pack } from "../packs";
 import { MiniGame } from "./MiniGame";
 import { gradeMark, SlotIcon } from "./SlotIcon";
 import { cultView, energyNow, useStore } from "../store";
@@ -85,7 +85,7 @@ export function Compound() {
   // dots the energy cost; a long press shows the name and what it does.
   const slotButton = (a: ActionDef) => {
     const id = a.id, slot = iconOf(a);
-    const def = defected ? { energy: a.energy ?? 1, cooldownSec: a.cooldownSec ?? 0 } : actionDef(pack, id, shared);
+    const def = defected || a === RITE_DEF ? { energy: a.energy ?? 1, cooldownSec: a.cooldownSec ?? 0 } : actionDef(pack, id, shared);
     const cdLeft = Math.max(0, (cooldowns[id] ?? 0) - serverNow);
     const cdFrac = def.cooldownSec > 0 ? Math.min(1, cdLeft / def.cooldownSec) : 0;
     const waiting = pending.some((p) => p.action === id);
@@ -113,7 +113,10 @@ export function Compound() {
   const signature = pack.manifest.actions.map((a) => a.id).filter((id) => pack.actions.includes(id));
   const actionIds = defected ? DEFECTOR_ACTIONS : [...signature, ...pack.actions.filter((a) => !signature.includes(a))];
   const slots = defected ? DEFECTOR_DEFS : slotted(pack);
-  const roundDef = st.round && (slots ?? pack.manifest.actions).find((a) => a.id === st.round!.action);
+  // The forbidden rite (fictional packs only): while the inner circle's
+  // demand stands, a fourth icon lets members refuse it.
+  const rite = !defected && pack.manifest.forbiddenRite && cult.rite ? cult.rite : undefined;
+  const roundDef = st.round && (st.round.action === RITE_DEF.id ? RITE_DEF : (slots ?? pack.manifest.actions).find((a) => a.id === st.round!.action));
   const showResult = lastResult && Date.now() - lastResult.at < 4000;
   const canSwitch = cult.status !== "standing" && world.phase === "live" && !player.switchedFrom && !defected && standing.length > 0;
 
@@ -198,8 +201,17 @@ export function Compound() {
             {standing.map((c) => <button key={c.id} onClick={() => run(() => switchCult(c.id))}>{t(packs[c.id], "name")}</button>)}
           </div>
         )}
+        {rite && live && (
+          <div className="rite-banner" role="alert">
+            <span className="rite-text">{t(pack, "rite.banner")}</span>
+            <span className="rite-meter" aria-label={`Resolve ${Math.floor(rite.resolve)} of ${rite.need}`}>
+              <span style={{ width: `${Math.min(100, (rite.resolve / rite.need) * 100)}%` }} />
+            </span>
+            <span className="mono small"><Countdown endsAt={rite.deadline} skew={clockSkew} /></span>
+          </div>
+        )}
         {slots ? (
-          <div className="slots">{slots.map(slotButton)}</div>
+          <div className="slots">{slots.map(slotButton)}{rite && slotButton(RITE_DEF)}</div>
         ) : (
           <>
             <div className="actions">{actionIds.map((id) => button(id, defected))}</div>
@@ -234,7 +246,7 @@ function useFirstActions(): [boolean, () => void] {
   }];
 }
 
-const SHORT: Record<IconKind, string> = { recruit: "Recruit", work: "Work", devote: "Devote", evidence: "Evidence", family: "Family", journalist: "Press" };
+const SHORT: Record<IconKind, string> = { recruit: "Recruit", work: "Work", devote: "Devote", evidence: "Evidence", family: "Family", journalist: "Press", refuse: "Refuse" };
 
 function SlotButton(p: { pack: Pack; id: string; slot: IconKind; badge?: string; cost: number; cdFrac: number; waiting: boolean; disabled: boolean; conv: boolean; showLabel: boolean; onPress: () => void }) {
   const [tip, setTip] = useState(false);

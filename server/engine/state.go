@@ -48,6 +48,16 @@ type Timer struct {
 	At int64  `json:"at"`
 }
 
+// RiteState is a cult's forbidden rite demand (packs with forbiddenRite).
+type RiteState struct {
+	Active   bool    `json:"active"`
+	Deadline int64   `json:"deadline,omitempty"`
+	Resolve  float64 `json:"resolve,omitempty"`
+	CalmTill int64   `json:"calmTill,omitempty"`
+	Demands  int     `json:"demands,omitempty"`
+	Refused  int     `json:"refused,omitempty"`
+}
+
 type Contributor struct {
 	Name  string  `json:"name"`
 	Value float64 `json:"value"`
@@ -73,11 +83,12 @@ type CultState struct {
 	Actions    int                     `json:"actions"`
 	Milestone  int                     `json:"milestone"`
 	Contrib    map[string]*Contributor `json:"contrib"`
+	Rite       *RiteState              `json:"rite,omitempty"`
 }
 
 type Event struct {
 	At   int64          `json:"at"`
-	Kind string         `json:"kind"` // milestone, fall, exposed, win, phase, event, day_end
+	Kind string         `json:"kind"` // milestone, fall, exposed, win, phase, event, rite, day_end
 	Cult string         `json:"cult,omitempty"`
 	Key  string         `json:"key"`
 	Data map[string]any `json:"data,omitempty"`

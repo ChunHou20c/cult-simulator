@@ -54,6 +54,7 @@ export function Lobby() {
               <div className="card-art" style={{ background: `linear-gradient(135deg, ${theme.primary ?? "#555"}, ${theme.floor ?? "#222"})` }}>
                 <Emblem pack={pack} size={64} className="card-emblem" />
                 <span className="diff">{pack?.manifest.difficulty}</span>
+                {pack?.manifest.contentNote && <span className="content-note">{pack.manifest.contentNote}</span>}
               </div>
               <div className="card-head">
                 <h2>{t(pack, "name")}</h2>
