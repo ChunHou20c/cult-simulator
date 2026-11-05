@@ -1,0 +1,201 @@
+{
+  "about": "An invented harvest clearing high in a valley: a ring of standing stones around a fire pit, logs to sit on, tents at the edge of the pines. Fictional.",
+  "sky": "#3b2e3f",
+  "ground": "#4c5a34",
+  "floor": {
+    "color": "#5a4a32",
+    "size": [
+      1000,
+      700
+    ]
+  },
+  "light": {
+    "sky": "#ffcf9a",
+    "ground": "#3a2a1c",
+    "sun": "#ffb070",
+    "intensity": 1.6
+  },
+  "walls": false,
+  "pillars": false,
+  "colors": {
+    "stone": "#8e8578",
+    "dirt": "#6e5838",
+    "leafsGreen": "#4f6b3a",
+    "woodBark": "#5a4230",
+    "grass": "#5f7340"
+  },
+  "dais": {
+    "color": "#6e655a",
+    "seat": {
+      "m": "stump_round",
+      "r": 360,
+      "s": 1.6
+    }
+  },
+  "seat": {
+    "m": "pillow",
+    "s": 2.4,
+    "height": 4,
+    "c": {
+      "carpet": "#c9b98c"
+    }
+  },
+  "props": [
+    {
+      "m": "campfire_stones",
+      "x": 480,
+      "y": 330,
+      "s": 3.2
+    },
+    {
+      "m": "log",
+      "x": 385,
+      "y": 340,
+      "r": 90,
+      "s": 0.9
+    },
+    {
+      "m": "log",
+      "x": 575,
+      "y": 340,
+      "r": 90,
+      "s": 0.9
+    },
+    {
+      "m": "rock_tallA",
+      "x": 207,
+      "y": 416,
+      "r": 0,
+      "s": 1.1
+    },
+    {
+      "m": "rock_tallA",
+      "x": 192,
+      "y": 297,
+      "r": 37,
+      "s": 1.1
+    },
+    {
+      "m": "rock_tallA",
+      "x": 242,
+      "y": 187,
+      "r": 74,
+      "s": 1.1
+    },
+    {
+      "m": "rock_tallA",
+      "x": 346,
+      "y": 108,
+      "r": 111,
+      "s": 1.1
+    },
+    {
+      "m": "rock_tallA",
+      "x": 480,
+      "y": 80,
+      "r": 148,
+      "s": 1.1
+    },
+    {
+      "m": "rock_tallA",
+      "x": 614,
+      "y": 108,
+      "r": 185,
+      "s": 1.1
+    },
+    {
+      "m": "rock_tallA",
+      "x": 718,
+      "y": 187,
+      "r": 222,
+      "s": 1.1
+    },
+    {
+      "m": "rock_tallA",
+      "x": 768,
+      "y": 297,
+      "r": 259,
+      "s": 1.1
+    },
+    {
+      "m": "rock_tallA",
+      "x": 753,
+      "y": 416,
+      "r": 296,
+      "s": 1.1
+    },
+    {
+      "m": "stump_round",
+      "x": 120,
+      "y": 560,
+      "s": 1.0
+    },
+    {
+      "m": "tent_detailedOpen",
+      "x": 90,
+      "y": 110,
+      "r": 45,
+      "s": 1.4
+    },
+    {
+      "m": "tent_detailedOpen",
+      "x": 870,
+      "y": 110,
+      "r": -45,
+      "s": 1.4
+    },
+    {
+      "m": "fence_simple",
+      "x": 880,
+      "y": 570,
+      "r": 20,
+      "s": 1.2
+    },
+    {
+      "m": "plant_bushLarge",
+      "x": 50,
+      "y": 430,
+      "s": 1.2
+    },
+    {
+      "m": "flower_yellowA",
+      "x": 910,
+      "y": 430,
+      "s": 1.4
+    }
+  ],
+  "scatter": [
+    {
+      "m": [
+        "tree_pineRoundA",
+        "tree_pineRoundC",
+        "tree_cone",
+        "tree_pineSmallA"
+      ],
+      "n": 40,
+      "inner": 150,
+      "outer": 500,
+      "seed": 31,
+      "s": [
+        2,
+        3.2
+      ]
+    },
+    {
+      "m": [
+        "rock_largeA",
+        "rock_smallA",
+        "grass_large",
+        "plant_bush"
+      ],
+      "n": 36,
+      "inner": 60,
+      "outer": 420,
+      "seed": 33,
+      "s": [
+        1.2,
+        2.2
+      ]
+    }
+  ]
+}
