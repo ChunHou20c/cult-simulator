@@ -1,0 +1,159 @@
+{
+  "schema": "1.3",
+  "id": "ashen_circle",
+  "version": "1.0.0",
+  "difficulty": "medium",
+  "names": "fictional",
+  "fictional": true,
+  "forbiddenRite": true,
+  "contentNote": "Fictional. Dark themes: ritual, coercion",
+  "theme": {
+    "primary": "#7a3b22",
+    "accent": "#f0a040",
+    "floor": "#2a2219"
+  },
+  "outfit": {
+    "garment": "robe",
+    "colors": [
+      "#d9cfb8",
+      "#d2c6aa",
+      "#cbbd9c",
+      "#e0d6c0",
+      "#bfb08e",
+      "#8a7a5c"
+    ],
+    "hair": [
+      "long",
+      "long",
+      "bun",
+      "short"
+    ],
+    "beard": 0.35,
+    "beads": "#c79a3a",
+    "feet": "#5a4632"
+  },
+  "stats": {
+    "devotion": {
+      "min": 0,
+      "max": 100,
+      "initial": 0,
+      "widget": "bar",
+      "label": "stat.devotion"
+    }
+  },
+  "initial": {
+    "followers": 20,
+    "funds": 3000,
+    "loyalty": 65
+  },
+  "goal": {
+    "progress": "cult.devotion / 100",
+    "label": "goal.devotion"
+  },
+  "guard": "cult.loyalty >= 50",
+  "sharedActions": [],
+  "actions": [
+    {
+      "id": "light_lantern",
+      "slot": "recruit",
+      "game": "flick",
+      "skin": {
+        "target": "🧑",
+        "item": "🏮"
+      },
+      "energy": 1,
+      "effects": [
+        {
+          "stat": "followers",
+          "add": 4,
+          "scale": "yield"
+        },
+        {
+          "stat": "scrutiny",
+          "add": 0.6
+        },
+        {
+          "stat": "paranoia",
+          "add": -1
+        }
+      ]
+    },
+    {
+      "id": "bring_harvest",
+      "slot": "work",
+      "game": "timing",
+      "skin": {
+        "zone": "🌾"
+      },
+      "energy": 2,
+      "cooldownSec": 60,
+      "effects": [
+        {
+          "stat": "funds",
+          "add": "200 + cult.followers * 3",
+          "scale": "yield"
+        },
+        {
+          "stat": "devotion",
+          "add": 0.09,
+          "scale": "yield"
+        },
+        {
+          "stat": "scrutiny",
+          "add": 0.3
+        }
+      ]
+    },
+    {
+      "id": "cast_effigy",
+      "slot": "devote",
+      "game": "beat",
+      "skin": {
+        "zone": "🔥"
+      },
+      "energy": 1,
+      "effects": [
+        {
+          "stat": "devotion",
+          "add": 0.25,
+          "scale": "yield"
+        },
+        {
+          "stat": "loyalty",
+          "add": 2.5
+        },
+        {
+          "stat": "paranoia",
+          "add": 1.2
+        },
+        {
+          "stat": "scrutiny",
+          "add": -1.5
+        }
+      ]
+    }
+  ],
+  "tick": [
+    {
+      "stat": "funds",
+      "add": "-cult.followers * 0.5"
+    },
+    {
+      "stat": "devotion",
+      "add": "cult.funds <= 0 ? -0.05 : 0"
+    }
+  ],
+  "falls": [
+    {
+      "when": "cult.funds <= 0 && cult.loyalty < 30",
+      "reason": "winter",
+      "text": "codex.fall.winter"
+    }
+  ],
+  "animations": {
+    "light_lantern": "lantern",
+    "bring_harvest": "harvest",
+    "cast_effigy": "torch",
+    "refuse_rite": "no"
+  }
+}

@@ -102,10 +102,14 @@ func TestSlotOrder(t *testing.T) {
 		t.Fatal(err)
 	}
 	for id, p := range c.Packs {
-		if len(p.Order) != 3 {
-			t.Fatalf("%s: %d actions, want 3", id, len(p.Order))
+		want := 3
+		if p.Manifest.ForbiddenRite {
+			want = 4 // the three slots, then the engine's refuse_rite
 		}
-		for i, a := range p.Order {
+		if len(p.Order) != want {
+			t.Fatalf("%s: %d actions, want %d", id, len(p.Order), want)
+		}
+		for i, a := range p.Order[:3] {
 			if p.Actions[a].Slot != Slots[i] || p.Actions[a].Game == "" {
 				t.Fatalf("%s: action %d is %s (slot %q game %q)", id, i, a, p.Actions[a].Slot, p.Actions[a].Game)
 			}
@@ -114,7 +118,7 @@ func TestSlotOrder(t *testing.T) {
 }
 
 func TestEmblems(t *testing.T) {
-	for _, id := range []string{"source_family", "synanon", "rajneeshpuram"} {
+	for _, id := range []string{"source_family", "synanon", "rajneeshpuram", "ashen_circle"} {
 		b, err := os.ReadFile(filepath.Join("../../content/cults", id, "emblem.svg"))
 		if err != nil {
 			t.Fatal(err)

@@ -1,0 +1,16 @@
+{
+  "name": "The Ashen Circle",
+  "tagline": "A harvest fire in a hidden valley, and a circle that never lets it go out.",
+  "leader": "The Keeper of the Flame (fictional)",
+  "era": "An invented valley, in no particular year",
+  "summary": "Raise the circle's devotion to 100 while keeping loyalty at 50 or more. Refuse the inner circle if it demands a forbidden rite.",
+  "stat.devotion": "Devotion",
+  "goal.devotion": "Devotion 100",
+  "action.light_lantern": "Light a lantern",
+  "action.light_lantern.desc": "Guide a lost traveller into the valley. Adds followers and a little scrutiny; new faces ease paranoia.",
+  "action.bring_harvest": "Bring in the harvest",
+  "action.bring_harvest.desc": "Work the fields. Adds funds and a little devotion.",
+  "action.cast_effigy": "Cast an effigy",
+  "action.cast_effigy.desc": "Give a straw figure to the fire. Raises devotion and loyalty and hides the circle from outsiders, but feeds the zealots' paranoia.",
+  "codex.fall.winter": "The stores ran out before winter and the faithful drifted down the mountain road. (Game ending.)"
+}

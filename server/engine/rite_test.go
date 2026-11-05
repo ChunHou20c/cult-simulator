@@ -83,12 +83,20 @@ func TestUnrefusedRiteIsAFall(t *testing.T) {
 	}
 }
 
-// Launch packs never get the rite: they are real groups.
-func TestLaunchPacksHaveNoRite(t *testing.T) {
+// Real-world packs never get the rite; only fictional ones may.
+func TestOnlyFictionalPacksHaveTheRite(t *testing.T) {
 	e := load(t)
+	n := 0
 	for id, p := range e.C.Packs {
-		if p.Actions[content.RiteActionID] != nil || p.Manifest.ForbiddenRite {
-			t.Fatalf("%s has the forbidden rite", id)
+		has := p.Actions[content.RiteActionID] != nil
+		if has && !p.Manifest.Fictional {
+			t.Fatalf("%s is a real group and has the forbidden rite", id)
 		}
+		if has {
+			n++
+		}
+	}
+	if n == 0 {
+		t.Fatal("no roster pack uses the forbidden rite")
 	}
 }
