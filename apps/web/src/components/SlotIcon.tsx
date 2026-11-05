@@ -36,6 +36,13 @@ export function SlotIcon({ slot, size = 30 }: { slot: IconKind; size?: number })
           <path d="M24 11h4v13a3 3 0 0 1-6 0M8 11h12M8 16h12M8 21h8" />
         </>
       )}
+      {slot === "refuse" && (
+        <>
+          <path d="M12 28V15h8v13" />
+          <path d="M16 11c-2-1.6-2-4.4 0-7 2 2.6 2 5.4 0 7z" />
+          <path d="M6 6l20 20" />
+        </>
+      )}
       {slot === "devote" && (
         <path d="M16 27S4 19.5 4 11.5C4 7.4 7 5 10.2 5c2.5 0 4.6 1.5 5.8 3.5C17.2 6.5 19.3 5 21.8 5 25 5 28 7.4 28 11.5 28 19.5 16 27 16 27z" />
       )}

@@ -19,10 +19,11 @@ const (
 	Flick  = "flick"  // flick a flyer at people walking past
 	Timing = "timing" // tap when the needle is in the zone
 	Beat   = "beat"   // tap on the beat
+	Snuff  = "snuff"  // tap candles out as they are lit (refusing the forbidden rite)
 )
 
 // Catalog lists every game the engine knows.
-var Catalog = []string{Flick, Timing, Beat}
+var Catalog = []string{Flick, Timing, Beat, Snuff}
 
 // Known reports whether id is a catalog game.
 func Known(id string) bool {
@@ -83,6 +84,15 @@ type Zone struct {
 	W float64 `json:"w"` // half width
 }
 
+// Candle is lit at Start ms at ring spot (X, Y) and must be tapped out
+// within BurnMs.
+type Candle struct {
+	X      float64 `json:"x"`
+	Y      float64 `json:"y"`
+	Start  float64 `json:"start"`
+	BurnMs float64 `json:"burnMs"`
+}
+
 // Layout is everything a round shows, decided by the seed.
 type Layout struct {
 	Game      string     `json:"game"`
@@ -91,6 +101,7 @@ type Layout struct {
 	Zones     []Zone     `json:"zones,omitempty"`
 	PeriodMs  float64    `json:"periodMs,omitempty"`
 	Beats     []float64  `json:"beats,omitempty"`
+	Candles   []Candle   `json:"candles,omitempty"`
 }
 
 // Flick tuning: the flyer leaves from (FlickX, FlickY) at FlickSpeed.
@@ -101,6 +112,18 @@ const (
 	flickGap   = 250.0
 	timingGap  = 200.0
 	beatGap    = 80.0
+	snuffGap   = 60.0
+)
+
+// Snuff tuning: SnuffSpots candles stand on a ring of radius SnuffRing
+// around the field's centre; SnuffLights of them are lit in turn; a tap
+// within SnuffReach of a lit candle puts it out.
+const (
+	SnuffSpots  = 6
+	SnuffLights = 6
+	SnuffRing   = 0.32
+	SnuffReach  = 0.12
+	SnuffBurnMs = 1300.0
 )
 
 // NewLayout builds the round for a game and seed.
@@ -139,6 +162,27 @@ func NewLayout(game string, seed uint32) Layout {
 			l.Beats = append(l.Beats, 1200+float64(j)*interval)
 		}
 		l.LengthMs = l.Beats[5] + 700
+		return l
+	case Snuff:
+		l := Layout{Game: game}
+		prev := -1
+		at := 500.0
+		for k := 0; k < SnuffLights; k++ {
+			// A different spot from the last one, so two in a row never stack.
+			spot := int(r.next() * (SnuffSpots - 1))
+			if spot >= prev && prev >= 0 {
+				spot++
+			}
+			prev = spot
+			ang := (float64(spot)/SnuffSpots)*2*math.Pi - math.Pi/2
+			l.Candles = append(l.Candles, Candle{
+				X: 0.5 + SnuffRing*math.Cos(ang), Y: 0.5 + SnuffRing*math.Sin(ang),
+				Start: at, BurnMs: SnuffBurnMs,
+			})
+			at += 520 + 260*r.next()
+		}
+		last := l.Candles[SnuffLights-1]
+		l.LengthMs = last.Start + last.BurnMs + 300
 		return l
 	}
 	return Layout{Game: game}
@@ -233,8 +277,50 @@ func Score(game string, seed uint32, inputs []Input, elapsedMs float64) (q float
 			sum += g
 		}
 		return clamp01((sum - 0.5*float64(extra)) / float64(len(l.Beats))), grades, true
+	case Snuff:
+		in = spaced(in, snuffGap)
+		grades = make([]float64, len(l.Candles))
+		out := make([]bool, len(l.Candles))
+		extra := 0
+		for _, i := range in {
+			k := SnuffHit(l, out, i)
+			if k < 0 {
+				extra++
+				continue
+			}
+			out[k] = true
+			grades[k] = SnuffGrade(l.Candles[k], i.T)
+		}
+		sum := 0.0
+		for _, g := range grades {
+			sum += g
+		}
+		return clamp01((sum - 0.25*float64(extra)) / float64(len(l.Candles))), grades, true
 	}
 	return SkipQuality, nil, false
+}
+
+// SnuffHit is the lit, not yet snuffed candle a tap at (X, Y) puts out (the
+// nearest within reach), or -1.
+func SnuffHit(l Layout, out []bool, i Input) int {
+	best, bestD := -1, SnuffReach
+	for k, c := range l.Candles {
+		if out[k] || i.T < c.Start || i.T > c.Start+c.BurnMs {
+			continue
+		}
+		if d := math.Hypot(i.X-c.X, i.Y-c.Y); d <= bestD {
+			best, bestD = k, d
+		}
+	}
+	return best
+}
+
+// SnuffGrade: out in the first half of its burn is Perfect, later is Good.
+func SnuffGrade(c Candle, t float64) float64 {
+	if t-c.Start <= c.BurnMs*0.5 {
+		return Perfect
+	}
+	return Good
 }
 
 // flickGrade: where is the flyer when it reaches the stranger's lane, and

@@ -14,6 +14,8 @@ export interface CultView {
   stats: Record<string, number>;
   buffs?: { id: string; target: string; mul: number; until: number }[];
   can?: Record<string, boolean>;
+  /** A standing forbidden rite demand: when it falls due, and the resolve built against it. */
+  rite?: { deadline: number; resolve: number; need: number };
 }
 
 export interface WorldEvent { at: number; kind: string; cult?: string; key: string; data?: Record<string, any> }
@@ -67,7 +69,7 @@ export type Screen = "gate" | "lobby" | "compound" | "end" | "summary" | "archiv
 export interface Pending { seq: number; action: string }
 
 /** An open mini game round, as the server handed it out. */
-export interface Round { seq: number; nonce: string; seed: number; game: "flick" | "timing" | "beat"; action: string; at: number }
+export interface Round { seq: number; nonce: string; seed: number; game: "flick" | "timing" | "beat" | "snuff"; action: string; at: number }
 
 interface State {
   screen: Screen;

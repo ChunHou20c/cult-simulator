@@ -82,6 +82,18 @@ func TestValidatorCatches(t *testing.T) {
 	expectIssue(t, func(s string) string { return strings.Replace(s, `"slot": "devote"`, `"slot": "work"`, 1) }, "both use slot")
 	expectIssue(t, func(s string) string { return strings.Replace(s, `"game": "beat"`, `"game": "chess"`, 1) }, "schema")
 	expectIssue(t, func(s string) string { return strings.Replace(s, `"sharedActions": [],`, ``, 1) }, "sharedActions")
+	// The forbidden rite (schema 1.3) is for fictional packs only.
+	expectIssue(t, func(s string) string { return strings.Replace(s, `"schema": "1.2",`, `"schema": "1.3", "forbiddenRite": true,`, 1) }, "fictional")
+}
+
+func TestRealPackMayNotMentionSacrifice(t *testing.T) {
+	l, dir := writePack(t, func(s string) string { return s })
+	p := filepath.Join(dir, "strings", "en.json")
+	b, _ := os.ReadFile(p)
+	os.WriteFile(p, []byte(strings.Replace(string(b), "{", `{ "x.rumour": "They say there are sacrifices.",`, 1)), 0o644)
+	if _, err := l.LoadPack(dir); err == nil || !strings.Contains(err.Error(), "sacrifice") {
+		t.Fatalf("want a sacrifice care issue, got %v", err)
+	}
 }
 
 func TestSlotOrder(t *testing.T) {

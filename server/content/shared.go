@@ -39,6 +39,32 @@ var coreFalls = []FallDef{
 	{When: "cult.loyalty <= 0", Reason: "dissolved", Text: "core.fall.dissolved"},
 }
 
+// The forbidden rite (engine settings). In a pack with forbiddenRite, a
+// demand starts when paranoia reaches RiteDemandParanoia. Players have
+// RiteWindowSec to build RiteResolveNeed resolve with refuse_rite (each
+// round adds its mini game gain, 0.6 to 1.4); if they do, the demand breaks,
+// paranoia drops by RiteBreakParanoia and no new demand comes for
+// RiteCalmSec. If they don't, the cult falls. Nothing ever performs the rite.
+const (
+	RiteActionID       = "refuse_rite"
+	RiteGame           = "snuff"
+	RiteDemandParanoia = 70
+	RiteWindowSec      = 20 * 60
+	RiteResolveNeed    = 5
+	RiteBreakParanoia  = 15
+	RiteCalmSec        = 60 * 60
+	RiteFallReason     = "forbidden_rite"
+	RiteFallText       = "core.fall.forbidden_rite"
+)
+
+// riteActionJSON is refuse_rite: refusing the inner circle calms the group
+// but splits it a little.
+const riteActionJSON = `{ "id": "refuse_rite", "energy": 1, "cooldownSec": 20, "effects": [
+    { "stat": "paranoia", "add": -2 },
+    { "stat": "loyalty", "add": -1 } ] }`
+
+var riteAction *Action
+
 // Defector tuning (engine settings).
 const (
 	DefectMinActions      = 10
@@ -64,11 +90,20 @@ func init() {
 		a.Shared = true
 		sharedActions = append(sharedActions, a)
 	}
+	var rd ActionDef
+	if err := json.Unmarshal([]byte(riteActionJSON), &rd); err != nil {
+		panic(err)
+	}
+	ra, err := compileAction(rd)
+	if err != nil {
+		panic(err)
+	}
+	ra.Shared, ra.Rite, ra.Game = true, true, RiteGame
+	riteAction = ra
 	var tick []EffectDef
 	if err := json.Unmarshal([]byte(coreTickJSON), &tick); err != nil {
 		panic(err)
 	}
-	var err error
 	if coreTick, err = compileEffects(tick); err != nil {
 		panic(err)
 	}

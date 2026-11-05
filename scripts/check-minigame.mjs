@@ -15,6 +15,10 @@ if (b.beats[1] !== 1860 || b.lengthMs !== 5200) { console.error("beat layout mis
 // Seed 777, printed by the Go side.
 if (layout("flick", 777).strangers[1].speed !== 0.47460059002041816) { console.error("flick layout mismatch"); ok = false; }
 if (layout("timing", 777).zones[2].c !== 0.3154323977883905) { console.error("timing layout mismatch"); ok = false; }
+const sn = layout("snuff", 777).candles[2];
+if (sn.start !== 1580.9381357906386 || sn.x !== 0.2228718707889797) { console.error("snuff layout mismatch", sn); ok = false; }
+const sl = layout("snuff", 99);
+if (score("snuff", 99, sl.candles.map((c) => ({ t: c.start + 100, x: c.x, y: c.y }))).q !== 1) { console.error("perfect snuff round did not score 1"); ok = false; }
 const perfect = score("beat", 12345, b.beats.map((t) => ({ t })));
 if (perfect.q !== 1) { console.error("perfect beat round did not score 1", perfect); ok = false; }
 console.log(ok ? "minigame mirror matches the server" : "MISMATCH");

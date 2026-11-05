@@ -11,11 +11,11 @@ export interface StatDef { widget: Widget; label: string; min?: number; max?: nu
 export type Slot = "recruit" | "work" | "devote";
 export const SLOTS: Slot[] = ["recruit", "work", "devote"];
 /** Every action icon: the three slots, and the defector's three. */
-export type IconKind = Slot | "evidence" | "family" | "journalist";
+export type IconKind = Slot | "evidence" | "family" | "journalist" | "refuse";
 export interface ActionDef {
   id: string; energy?: number; cooldownSec?: number; requires?: string;
   /** Schema 1.1: which of the three icon buttons, its mini game and what the game shows. */
-  slot?: Slot; game?: "flick" | "timing" | "beat"; skin?: { target?: string; item?: string; zone?: string };
+  slot?: Slot; game?: "flick" | "timing" | "beat" | "snuff"; skin?: { target?: string; item?: string; zone?: string };
   /** Client only: the icon, for actions that are not in a slot (defector actions). */
   icon?: IconKind;
 }
@@ -36,6 +36,11 @@ export interface Manifest {
   animations?: Record<string, string>;
   /** What members wear, in 3D and 2D; see outfit.ts. */
   outfit?: OutfitDef;
+  /** Schema 1.3: an invented cult; only these may turn on the forbidden rite. */
+  fictional?: boolean;
+  forbiddenRite?: boolean;
+  /** Schema 1.3: a short content warning for the lobby card. */
+  contentNote?: string;
 }
 /** A place to sit. r: which way a seated player faces, in degrees (180, the default, faces the dais). */
 export interface Mat { id: string; x: number; y: number; r?: number }
@@ -132,6 +137,12 @@ const CORE: Record<string, string> = {
   "core.fall.paranoia": "Paranoia took over and the group turned on the outside world.",
   "core.fall.dissolved": "Loyalty ran out and the members walked away.",
   "core.fall.exposed": "Former members told their story and the group was exposed.",
+  "core.fall.forbidden_rite": "No one stood up to the inner circle's demand. Members fled in the night and the authorities shut the group down.",
+  "core.rite.demand": "The inner circle of {cult} demands a forbidden rite",
+  "core.rite.refused": "{cult} refused the forbidden rite",
+  "rite.banner": "The inner circle demands a forbidden rite. Refuse it before time runs out.",
+  "action.refuse_rite": "Refuse the rite", "action.refuse_rite.desc": "Snuff the inner circle's candles. Builds resolve against the demand and calms the group, but costs a little loyalty.",
+  "stat.resolve": "Resolve",
   "event.milestone": "{cult} reached {pct}%",
   "event.win": "{cult} reached its goal",
   "event.day_end.target_reached": "The Day is over",
@@ -162,6 +173,10 @@ export const DEFECTOR_DEFS: ActionDef[] = [
   { id: "call_family", icon: "family", game: "beat", energy: 1, cooldownSec: 20, skin: { zone: "☎️" } },
   { id: "talk_to_journalist", icon: "journalist", game: "flick", energy: 1, cooldownSec: 20, skin: { target: "🎙️", item: "📁" } },
 ];
+
+/** The engine's refuse_rite action (packs with forbiddenRite, while a demand
+ * stands); matches content.RiteActionID and its numbers on the server. */
+export const RITE_DEF: ActionDef = { id: "refuse_rite", icon: "refuse", game: "snuff", energy: 1, cooldownSec: 20, skin: { target: "🕯️" } };
 
 /** Energy and cooldown for any action: the pack's own, or the engine's shared list from hello. */
 export function actionDef(pack: Pack, id: string, shared: { id: string; energy: number; cooldownSec: number }[]): { energy: number; cooldownSec: number } {

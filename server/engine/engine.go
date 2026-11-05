@@ -140,6 +140,9 @@ func (e *Engine) Available(d *WorldDay, cultID, actionID string, now int64) bool
 	if a == nil || (a.Phases != nil && !a.Phases[cs.Phase]) {
 		return false
 	}
+	if a.Rite && (cs.Rite == nil || !cs.Rite.Active) {
+		return false
+	}
 	return a.Requires.Bool(env(cs, now, d.EndsAt))
 }
 
@@ -173,7 +176,7 @@ func (e *Engine) Apply(d *WorldDay, r ActionReq) ActionResult {
 		if a.Phases != nil && !a.Phases[cs.Phase] {
 			return ActionResult{Reason: "wrong_phase"}
 		}
-		if !a.Requires.Bool(env(cs, now, d.EndsAt)) {
+		if !a.Requires.Bool(env(cs, now, d.EndsAt)) || (a.Rite && (cs.Rite == nil || !cs.Rite.Active)) {
 			return ActionResult{Reason: "requirement"}
 		}
 		mul := cs.Yield * d.fairness(cs) * buffMul(cs, a.ID, now)
@@ -187,6 +190,9 @@ func (e *Engine) Apply(d *WorldDay, r ActionReq) ActionResult {
 			heat = minigame.Heat(r.Quality)
 		}
 		e.applyEffects(p, cs, a.Effects, mul, heat, now, d.EndsAt, deltas)
+		if a.Rite {
+			e.refuseRite(d, p, cs, r, now, deltas)
+		}
 		if a.Buff != nil {
 			b := Buff{ID: a.Buff.ID, Target: a.Buff.Target, Mul: a.Buff.Mul, Until: now + int64(a.Buff.DurationMin*60)}
 			replaced := false
@@ -370,6 +376,10 @@ func (e *Engine) Tick(d *WorldDay, now int64) {
 			}
 			cs.Buffs = live
 			e.events(d, p, cs, t)
+			e.rite(d, p, cs, t)
+			if cs.Status != StatusStanding {
+				continue
+			}
 			cs.Progress = e.progress(p, cs, t, d.EndsAt)
 			e.milestones(d, cs, t)
 			e.checkCult(d, p, cs, t)
@@ -461,4 +471,50 @@ func Outcome(d *WorldDay, pd *PlayerDay) string {
 		return OutcomeUnfinished
 	}
 	return OutcomeLost
+}
+
+// rite runs a pack's forbidden rite pressure once a minute: a demand starts
+// at high paranoia, and a demand nobody refused in time ends the cult. The
+// rite itself never happens on screen and nothing rewards it.
+func (e *Engine) rite(d *WorldDay, p *content.Pack, cs *CultState, now int64) {
+	if !p.Manifest.ForbiddenRite || cs.Status != StatusStanding || d.Phase != PhaseLive {
+		return
+	}
+	if cs.Rite == nil {
+		cs.Rite = &RiteState{}
+	}
+	rs := cs.Rite
+	if !rs.Active {
+		if now >= rs.CalmTill && cs.Stats["paranoia"] >= content.RiteDemandParanoia {
+			rs.Active, rs.Deadline, rs.Resolve = true, now+content.RiteWindowSec, 0
+			rs.Demands++
+			e.addEvent(d, Event{At: now, Kind: "rite", Cult: cs.ID, Key: "core.rite.demand",
+				Data: map[string]any{"deadline": rs.Deadline}})
+		}
+		return
+	}
+	if now >= rs.Deadline {
+		rs.Active = false
+		cs.Status, cs.FallReason, cs.FallText, cs.Historical, cs.EndedAt = StatusFallen, content.RiteFallReason, content.RiteFallText, false, now
+		e.addEvent(d, Event{At: now, Kind: "fall", Cult: cs.ID, Key: content.RiteFallText, Data: map[string]any{"reason": content.RiteFallReason}})
+	}
+}
+
+// refuseRite adds one refuse_rite round's resolve; enough of it breaks the
+// demand, calms the group and holds off the next demand for a while.
+func (e *Engine) refuseRite(d *WorldDay, p *content.Pack, cs *CultState, r ActionReq, now int64, deltas map[string]float64) {
+	rs := cs.Rite
+	add := 1.0
+	if r.Played {
+		add = minigame.Gain(r.Quality)
+	}
+	rs.Resolve += add
+	deltas["resolve"] += add
+	if rs.Resolve < content.RiteResolveNeed {
+		return
+	}
+	rs.Active, rs.Resolve, rs.CalmTill = false, 0, now+content.RiteCalmSec
+	rs.Refused++
+	e.applyEffects(p, cs, []content.Effect{{Stat: "paranoia", Op: content.OpAdd, Value: content.ConstExpr(-content.RiteBreakParanoia)}}, 1, 1, now, d.EndsAt, deltas)
+	e.addEvent(d, Event{At: now, Kind: "rite", Cult: cs.ID, Key: "core.rite.refused"})
 }

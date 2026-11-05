@@ -52,10 +52,11 @@ type DaySummary struct {
 const HelpURL = "https://www.icsahome.com/"
 
 var coreFallText = map[string]string{
-	"core.fall.investigated": "Investigators closed in and the group was shut down.",
-	"core.fall.paranoia":     "Paranoia took over and the group turned on the outside world.",
-	"core.fall.dissolved":    "Loyalty ran out and the members walked away.",
-	"core.fall.exposed":      "Former members told their story and the group was exposed.",
+	"core.fall.investigated":   "Investigators closed in and the group was shut down.",
+	"core.fall.paranoia":       "Paranoia took over and the group turned on the outside world.",
+	"core.fall.dissolved":      "Loyalty ran out and the members walked away.",
+	"core.fall.exposed":        "Former members told their story and the group was exposed.",
+	"core.fall.forbidden_rite": "No one stood up to the inner circle's demand. Members fled in the night and the authorities shut the group down.",
 }
 
 func name(p *content.Pack, id string) string {
