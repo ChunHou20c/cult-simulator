@@ -118,7 +118,7 @@ func TestSlotOrder(t *testing.T) {
 }
 
 func TestEmblems(t *testing.T) {
-	for _, id := range []string{"source_family", "synanon", "rajneeshpuram", "ashen_circle", "horned_star"} {
+	for _, id := range []string{"source_family", "synanon", "rajneeshpuram", "ashen_circle", "horned_star", "open_eye"} {
 		b, err := os.ReadFile(filepath.Join("../../content/cults", id, "emblem.svg"))
 		if err != nil {
 			t.Fatal(err)

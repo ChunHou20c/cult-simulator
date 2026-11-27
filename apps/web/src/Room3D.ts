@@ -41,6 +41,8 @@ export interface SceneDef {
   portrait?: false | { x?: number; y?: number; size?: number; stand?: boolean; frame?: string };
   /** A carved stone idol: a seated, winged figure with a horned beast's head, a star on its brow and a flame between its horns. Built from shapes, no model. x, y on the floor; r turns it (0 faces the front); s scales it (1 is about twice a person's height); h lifts it. */
   idol?: { x?: number; y?: number; r?: number; s?: number; h?: number; stone?: string; horn?: string; wing?: string; glow?: string };
+  /** A great glowing eye inside a triangle, ringed and rayed, hung above the dais. Built from shapes, no model. x, y on the floor (y 0 is the back wall); h is the height of its centre; tilt leans its top back, in degrees, so the high camera sees its face (default 35); s scales it (1 is about two people tall). */
+  eye?: { x?: number; y?: number; h?: number; tilt?: number; s?: number; frame?: string; white?: string; iris?: string; glow?: string };
   scatter?: { m: string[]; n: number; inner: number; outer: number; seed?: number; s?: [number, number]; c?: Record<string, string>; front?: boolean }[];
 }
 
@@ -154,9 +156,10 @@ export function buildRoom3D(group: THREE.Group, L: CompoundLayout, th: Theme, de
     const top = new THREE.Mesh(new THREE.BoxGeometry(240, 14, 70), std(col(dais?.color, th.primary)));
     top.position.set(W / 2, 7, dz);
     group.add(top);
-    // A scene with an idol puts it where the leader's seat would be (below).
-    if (furnished && dais?.seat && !def?.idol) place({ ...dais.seat, x: dais.seat.x ?? W / 2, y: dais.seat.y ?? dz - 5, h: dais.seat.h ?? 14 });
-    else if (!def?.idol) {
+    // A scene with an idol or an eye puts it where the leader's seat would be (below).
+    const centrepiece = !!(def?.idol || def?.eye);
+    if (furnished && dais?.seat && !centrepiece) place({ ...dais.seat, x: dais.seat.x ?? W / 2, y: dais.seat.y ?? dz - 5, h: dais.seat.h ?? 14 });
+    else if (!centrepiece) {
       const seat = new THREE.Mesh(new THREE.CylinderGeometry(22, 24, 10, 24), std(th.accent, { emissive: th.accent, emissiveIntensity: 0.25 }));
       seat.position.set(W / 2, 19, dz);
       group.add(seat);
@@ -176,6 +179,7 @@ export function buildRoom3D(group: THREE.Group, L: CompoundLayout, th: Theme, de
 
   // The idol needs no models, so it stands in the plain room too.
   if (def?.idol) group.add(buildIdol(def.idol, W, std));
+  if (def?.eye) group.add(buildEye(def.eye, W, std));
 
   // The leader's portrait: a dark frame on the wall, or on a stand.
   let portrait: Built["portrait"];
@@ -372,6 +376,77 @@ function buildIdol(o: NonNullable<SceneDef["idol"]>, W: number, std: Std): THREE
 
   g.position.set(o.x ?? W / 2, o.h ?? 0, o.y ?? 60);
   g.rotation.y = deg(o.r, 0);
+  g.scale.setScalar(o.s ?? 1);
+  return g;
+}
+
+/** The great eye (SceneDef.eye), facing +z (the front of the room). Units: a person is about 60 tall. */
+function buildEye(o: NonNullable<SceneDef["eye"]>, W: number, std: Std): THREE.Group {
+  const g = new THREE.Group();
+  const gold = std(o.frame ?? "#e8c35a", { metalness: 0.6, roughness: 0.35, emissive: o.frame ?? "#e8c35a", emissiveIntensity: 0.25 });
+  const glowCol = new THREE.Color(o.glow ?? "#ffe9a8");
+  const add = (geo: THREE.BufferGeometry, mat: THREE.Material, x: number, y: number, z: number, rz = 0) => {
+    const m = new THREE.Mesh(geo, mat);
+    m.position.set(x, y, z);
+    m.rotation.z = rz;
+    g.add(m);
+    return m;
+  };
+
+  // A soft halo behind everything, so the eye seems to shine on the wall.
+  add(new THREE.CircleGeometry(78, 40), new THREE.MeshBasicMaterial({ color: glowCol, transparent: true, opacity: 0.18 }), 0, 0, -3);
+  add(new THREE.CircleGeometry(60, 40), new THREE.MeshBasicMaterial({ color: glowCol, transparent: true, opacity: 0.22 }), 0, 0, -2.5);
+  // The ring, and rays between ring and halo: long and short in turn.
+  add(new THREE.TorusGeometry(56, 2.6, 8, 48), gold, 0, 0, 0);
+  for (let i = 0; i < 24; i++) {
+    const a = (i * Math.PI * 2) / 24;
+    const len = i % 2 ? 10 : 20;
+    const r = 60 + len / 2;
+    add(new THREE.BoxGeometry(2, len, 1.5), gold, Math.sin(a) * r, Math.cos(a) * r, 0, -a);
+  }
+  // The triangle: three gold bars, point up, inside the ring.
+  const R = 48; // corner distance from the centre
+  const pts = [0, 1, 2].map((i) => {
+    const a = Math.PI / 2 + (i * Math.PI * 2) / 3;
+    return new THREE.Vector2(Math.cos(a) * R, Math.sin(a) * R - 6);
+  });
+  for (let i = 0; i < 3; i++) {
+    const p = pts[i], q = pts[(i + 1) % 3];
+    const len = p.distanceTo(q) + 5;
+    add(new THREE.BoxGeometry(len, 5, 4), gold, (p.x + q.x) / 2, (p.y + q.y) / 2, 1, Math.atan2(q.y - p.y, q.x - p.x));
+  }
+  const fill = new THREE.Shape(pts);
+  add(new THREE.ShapeGeometry(fill), std("#1f3a5a", { emissive: "#1f3a5a", emissiveIntensity: 0.3 }), 0, 0, -1);
+
+  // The eye: an almond of white, a glowing iris, a dark pupil and a glint, with a lid line.
+  const cy = -10, ew = 27, eh = 13;
+  const almond = new THREE.Shape();
+  almond.moveTo(-ew, cy);
+  almond.bezierCurveTo(-ew * 0.5, cy + eh * 1.5, ew * 0.5, cy + eh * 1.5, ew, cy);
+  almond.bezierCurveTo(ew * 0.5, cy - eh * 1.5, -ew * 0.5, cy - eh * 1.5, -ew, cy);
+  add(new THREE.ShapeGeometry(almond, 16), new THREE.MeshBasicMaterial({ color: o.white ?? "#fbf8ef" }), 0, 0, 0.5);
+  add(new THREE.CircleGeometry(10, 28), new THREE.MeshBasicMaterial({ color: o.iris ?? "#3a8ac8" }), 0, cy, 1);
+  add(new THREE.RingGeometry(9, 10.5, 28), new THREE.MeshBasicMaterial({ color: glowCol }), 0, cy, 1.1);
+  add(new THREE.CircleGeometry(4.6, 20), new THREE.MeshBasicMaterial({ color: 0x0c1622 }), 0, cy, 1.5);
+  add(new THREE.CircleGeometry(1.8, 12), new THREE.MeshBasicMaterial({ color: 0xffffff }), 3, cy + 3, 1.8);
+  const lid = new THREE.CatmullRomCurve3(
+    Array.from({ length: 9 }, (_, i) => {
+      const t = i / 8;
+      // The top edge of the almond, as a cubic bezier.
+      const x = (1 - t) ** 3 * -ew + 3 * (1 - t) ** 2 * t * (-ew * 0.5) + 3 * (1 - t) * t * t * (ew * 0.5) + t ** 3 * ew;
+      const y = cy + (3 * (1 - t) ** 2 * t + 3 * (1 - t) * t * t) * eh * 1.5;
+      return new THREE.Vector3(x, y, 2);
+    }),
+  );
+  g.add(new THREE.Mesh(new THREE.TubeGeometry(lid, 24, 1.4, 6), gold));
+
+  // A warm light from the eye onto the room below.
+  const light = new THREE.PointLight(glowCol, 1.2, 600, 1);
+  light.position.set(0, -10, 40);
+  g.add(light);
+
+  g.position.set(o.x ?? W / 2, o.h ?? 130, o.y ?? 2);
+  g.rotation.x = -deg(o.tilt, 35);
   g.scale.setScalar(o.s ?? 1);
   return g;
 }

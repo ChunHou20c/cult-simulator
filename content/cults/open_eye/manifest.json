@@ -1,0 +1,159 @@
+{
+  "schema": "1.3",
+  "id": "open_eye",
+  "version": "1.0.0",
+  "difficulty": "medium",
+  "names": "fictional",
+  "fictional": true,
+  "forbiddenRite": true,
+  "contentNote": "Fictional. Dark themes: secret society, surveillance, coercion",
+  "theme": {
+    "primary": "#1f3a5a",
+    "accent": "#e8c35a",
+    "floor": "#d9d4c8"
+  },
+  "outfit": {
+    "garment": "robe",
+    "colors": [
+      "#eeeae0",
+      "#e4dfd2",
+      "#f4f1ea",
+      "#dcd6c6",
+      "#1f3a5a",
+      "#26466a"
+    ],
+    "hair": [
+      "short",
+      "short",
+      "bun",
+      "long"
+    ],
+    "beard": 0.25,
+    "beads": "#e8c35a",
+    "feet": "#2a2a30"
+  },
+  "stats": {
+    "secrets": {
+      "min": 0,
+      "max": 100,
+      "initial": 0,
+      "widget": "bar",
+      "label": "stat.secrets"
+    }
+  },
+  "initial": {
+    "followers": 15,
+    "funds": 5000,
+    "loyalty": 65
+  },
+  "goal": {
+    "progress": "cult.secrets / 100",
+    "label": "goal.secrets"
+  },
+  "guard": "cult.loyalty >= 50",
+  "sharedActions": [],
+  "actions": [
+    {
+      "id": "tap_a_shoulder",
+      "slot": "recruit",
+      "game": "flick",
+      "skin": {
+        "target": "🤵",
+        "item": "🗝️"
+      },
+      "energy": 1,
+      "effects": [
+        {
+          "stat": "followers",
+          "add": 4,
+          "scale": "yield"
+        },
+        {
+          "stat": "scrutiny",
+          "add": 0.6
+        },
+        {
+          "stat": "paranoia",
+          "add": -1
+        }
+      ]
+    },
+    {
+      "id": "trade_a_secret",
+      "slot": "work",
+      "game": "timing",
+      "skin": {
+        "zone": "📜"
+      },
+      "energy": 2,
+      "cooldownSec": 60,
+      "effects": [
+        {
+          "stat": "funds",
+          "add": "250 + cult.followers * 3",
+          "scale": "yield"
+        },
+        {
+          "stat": "secrets",
+          "add": 0.09,
+          "scale": "yield"
+        },
+        {
+          "stat": "scrutiny",
+          "add": 0.35
+        }
+      ]
+    },
+    {
+      "id": "gaze_into_the_eye",
+      "slot": "devote",
+      "game": "beat",
+      "skin": {
+        "zone": "👁️"
+      },
+      "energy": 1,
+      "effects": [
+        {
+          "stat": "secrets",
+          "add": 0.25,
+          "scale": "yield"
+        },
+        {
+          "stat": "loyalty",
+          "add": 2.5
+        },
+        {
+          "stat": "paranoia",
+          "add": 1.2
+        },
+        {
+          "stat": "scrutiny",
+          "add": -1.5
+        }
+      ]
+    }
+  ],
+  "tick": [
+    {
+      "stat": "funds",
+      "add": "-cult.followers * 0.5"
+    },
+    {
+      "stat": "secrets",
+      "add": "cult.funds <= 0 ? -0.05 : 0"
+    }
+  ],
+  "falls": [
+    {
+      "when": "cult.scrutiny >= 100",
+      "reason": "exposed",
+      "text": "codex.fall.exposed"
+    }
+  ],
+  "animations": {
+    "tap_a_shoulder": "talk",
+    "trade_a_secret": "interact",
+    "gaze_into_the_eye": "raise_hands",
+    "refuse_rite": "no"
+  }
+}
