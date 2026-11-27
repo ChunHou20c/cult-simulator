@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <!-- Original emblem for an invented cult: a horned goat idol with a star on its brow and a flame between its horns. Drawn for this game; not a copy of any engraving or real group's sign. -->
+  <circle cx="50" cy="50" r="48" fill="#1c1618"/>
+  <g fill="#4a2a4e">
+    <path d="M38 60 C28 52 18 50 8 54 C14 58 12 62 9 66 C16 66 18 70 15 75 C24 72 30 74 32 78 C36 72 38 66 38 60 Z"/>
+    <path d="M62 60 C72 52 82 50 92 54 C86 58 88 62 91 66 C84 66 82 70 85 75 C76 72 70 74 68 78 C64 72 62 66 62 60 Z"/>
+  </g>
+  <g fill="#e0cfa6">
+    <path d="M41 36 C34 30 30 22 33 13 C35 20 39 24 45 28 C44 31 43 34 41 36 Z"/>
+    <path d="M59 36 C66 30 70 22 67 13 C65 20 61 24 55 28 C56 31 57 34 59 36 Z"/>
+  </g>
+  <path d="M50 10 C54 15 55 19 53 22 C52 24 51 25 50 25 C49 25 48 24 47 22 C45 19 46 15 50 10 Z" fill="#f0a040"/>
+  <g fill="#6b5a6e">
+    <path d="M38 40 C31 39 26 41 22 45 C28 47 33 47 38 45 Z"/>
+    <path d="M62 40 C69 39 74 41 78 45 C72 47 67 47 62 45 Z"/>
+  </g>
+  <path d="M50 27 C58 27 63 32 63 40 C63 50 58 58 56 68 C55 74 53 78 50 78 C47 78 45 74 44 68 C42 58 37 50 37 40 C37 32 42 27 50 27 Z" fill="#6b5a6e"/>
+  <path d="M46 76 L50 90 L54 76 Z" fill="#6b5a6e"/>
+  <polygon points="50.0,32.5 51.5,36.9 56.2,37.0 52.5,39.8 53.8,44.3 50.0,41.6 46.2,44.3 47.5,39.8 43.8,37.0 48.5,36.9" fill="#f2c14e"/>
+  <g fill="#f2c14e">
+    <ellipse cx="43.5" cy="51" rx="2.6" ry="1.5"/>
+    <ellipse cx="56.5" cy="51" rx="2.6" ry="1.5"/>
+  </g>
+  <g fill="#2a2030">
+    <ellipse cx="47.5" cy="73" rx="1.3" ry="2"/>
+    <ellipse cx="52.5" cy="73" rx="1.3" ry="2"/>
+  </g>
+  <circle cx="50" cy="50" r="46" fill="none" stroke="#d9a441" stroke-width="2.5"/>
+</svg>

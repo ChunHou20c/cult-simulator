@@ -1,0 +1,16 @@
+{
+  "name": "The Order of the Horned Star",
+  "tagline": "A candlelit lodge under an old city, and a horned idol with a star on its brow.",
+  "leader": "The Magister (fictional)",
+  "era": "An invented city, in no particular year",
+  "summary": "Raise the order's illumination to 100 while keeping loyalty at 50 or more. Refuse the inner lodge if it demands a forbidden rite.",
+  "stat.illumination": "Illumination",
+  "goal.illumination": "Illumination 100",
+  "action.send_invitation": "Send an invitation",
+  "action.send_invitation.desc": "Slip a sealed card to a curious guest. Adds followers and a little scrutiny; new faces ease paranoia.",
+  "action.read_the_stars": "Read the stars",
+  "action.read_the_stars.desc": "Cast horoscopes for paying patrons. Adds funds and a little illumination.",
+  "action.kneel_to_idol": "Kneel to the idol",
+  "action.kneel_to_idol.desc": "Kneel before the Horned One by candlelight. Raises illumination and loyalty and hides the lodge from outsiders, but feeds the zealots' paranoia.",
+  "codex.fall.unmasked": "The newspapers printed the lodge's address and the members' names, and the order broke apart. (Game ending.)"
+}
