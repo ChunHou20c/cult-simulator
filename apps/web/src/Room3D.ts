@@ -28,7 +28,7 @@ export interface SceneDef {
   walls?: false | { style?: "plain" | "kit"; color?: string; height?: number; sides?: ("back" | "left" | "right")[]; windows?: boolean; c?: Record<string, string> };
   pillars?: false | { color?: string; height?: number; every?: number };
   /** The raised platform with the leader's empty seat (default on). */
-  dais?: false | { color?: string; seat?: PropDef };
+  dais?: false | { color?: string; seat?: PropDef; y?: number };
   /** Recolours applied to every model by material name (a prop's own c wins). */
   colors?: Record<string, string>;
   /** The emblem banner on the back wall (default on when there is a back wall). */
@@ -39,6 +39,8 @@ export interface SceneDef {
   /** Scenery scattered around the outside of the room, in a ring between inner and outer distance. */
   /** The leader's portrait (the pack's portrait.svg), pixelated in a frame: on the back wall, or on a stand when stand is true. */
   portrait?: false | { x?: number; y?: number; size?: number; stand?: boolean; frame?: string };
+  /** A carved stone idol: a seated, winged figure with a horned beast's head, a star on its brow and a flame between its horns. Built from shapes, no model. x, y on the floor; r turns it (0 faces the front); s scales it (1 is about twice a person's height); h lifts it. */
+  idol?: { x?: number; y?: number; r?: number; s?: number; h?: number; stone?: string; horn?: string; wing?: string; glow?: string };
   scatter?: { m: string[]; n: number; inner: number; outer: number; seed?: number; s?: [number, number]; c?: Record<string, string>; front?: boolean }[];
 }
 
@@ -148,13 +150,15 @@ export function buildRoom3D(group: THREE.Group, L: CompoundLayout, th: Theme, de
   // The dais with the leader's empty seat, and candles along its edge.
   const dais = d ? d.dais : {};
   if (dais !== false) {
+    const dz = dais?.y ?? 75; // the dais's centre, front to back
     const top = new THREE.Mesh(new THREE.BoxGeometry(240, 14, 70), std(col(dais?.color, th.primary)));
-    top.position.set(W / 2, 7, 75);
+    top.position.set(W / 2, 7, dz);
     group.add(top);
-    if (furnished && dais?.seat) place({ ...dais.seat, x: dais.seat.x ?? W / 2, y: dais.seat.y ?? 70, h: dais.seat.h ?? 14 });
-    else {
+    // A scene with an idol puts it where the leader's seat would be (below).
+    if (furnished && dais?.seat && !def?.idol) place({ ...dais.seat, x: dais.seat.x ?? W / 2, y: dais.seat.y ?? dz - 5, h: dais.seat.h ?? 14 });
+    else if (!def?.idol) {
       const seat = new THREE.Mesh(new THREE.CylinderGeometry(22, 24, 10, 24), std(th.accent, { emissive: th.accent, emissiveIntensity: 0.25 }));
-      seat.position.set(W / 2, 19, 75);
+      seat.position.set(W / 2, 19, dz);
       group.add(seat);
     }
     const candleGeo = new THREE.CylinderGeometry(3, 3, 14, 8);
@@ -163,12 +167,15 @@ export function buildRoom3D(group: THREE.Group, L: CompoundLayout, th: Theme, de
     for (let i = 0; i < 6; i++) {
       const x = W / 2 - 100 + i * 40;
       const c = new THREE.Mesh(candleGeo, candleMat);
-      c.position.set(x, 21, 104);
+      c.position.set(x, 21, dz + 29);
       const f = new THREE.Mesh(new THREE.SphereGeometry(3, 8, 6), flameMat);
-      f.position.set(x, 31, 104);
+      f.position.set(x, 31, dz + 29);
       group.add(c, f);
     }
   }
+
+  // The idol needs no models, so it stands in the plain room too.
+  if (def?.idol) group.add(buildIdol(def.idol, W, std));
 
   // The leader's portrait: a dark frame on the wall, or on a stand.
   let portrait: Built["portrait"];
@@ -260,4 +267,111 @@ export function buildRoom3D(group: THREE.Group, L: CompoundLayout, th: Theme, de
       background: new THREE.Color(d?.sky ?? "#16130f"),
     },
   };
+}
+
+type Std = (c: THREE.ColorRepresentation, extra?: THREE.MeshStandardMaterialParameters) => THREE.MeshStandardMaterial;
+
+/** The horned idol (SceneDef.idol), facing +z (the front of the room). Units: a person is about 60 tall. */
+function buildIdol(o: NonNullable<SceneDef["idol"]>, W: number, std: Std): THREE.Group {
+  const g = new THREE.Group();
+  const stone = std(o.stone ?? "#4a4250");
+  const horn = std(o.horn ?? "#d8c8a0", { roughness: 0.6 });
+  const wing = std(o.wing ?? "#3a2a40", { side: THREE.DoubleSide });
+  const glowCol = new THREE.Color(o.glow ?? "#f2c14e");
+  const glow = new THREE.MeshBasicMaterial({ color: glowCol });
+  const add = (geo: THREE.BufferGeometry, mat: THREE.Material, x: number, y: number, z: number, rx = 0, ry = 0, rz = 0) => {
+    const m = new THREE.Mesh(geo, mat);
+    m.position.set(x, y, z);
+    m.rotation.set(rx, ry, rz);
+    g.add(m);
+    return m;
+  };
+
+  // Plinth, robed body, shoulders.
+  add(new THREE.BoxGeometry(80, 24, 56), stone, 0, 12, 0);
+  add(new THREE.BoxGeometry(70, 6, 48), std(glowCol.clone().multiplyScalar(0.35)), 0, 27, 0);
+  add(new THREE.CylinderGeometry(15, 28, 62, 16), stone, 0, 61, 0);
+  add(new THREE.SphereGeometry(17, 16, 10), stone, 0, 90, 0).scale.set(1.35, 0.7, 0.9);
+  // Arms: one raised, one lowered.
+  const arm = new THREE.CylinderGeometry(4, 5, 34, 8);
+  add(arm, stone, 26, 104, 0, 0, 0, -0.35);
+  add(arm, stone, -25, 74, 4, 0, 0, -0.45);
+  add(new THREE.SphereGeometry(5.5, 8, 6), stone, 32, 120, 0);
+  add(new THREE.SphereGeometry(5.5, 8, 6), stone, -31, 59, 6);
+
+  // Wings: a curved, scalloped shape on each side, swept back.
+  const ws = new THREE.Shape();
+  ws.moveTo(0, 0);
+  ws.bezierCurveTo(20, 30, 50, 44, 78, 40);
+  ws.lineTo(70, 26);
+  ws.quadraticCurveTo(62, 18, 66, 8);
+  ws.quadraticCurveTo(54, 4, 54, -8);
+  ws.quadraticCurveTo(40, -6, 36, -18);
+  ws.quadraticCurveTo(22, -10, 10, -14);
+  ws.lineTo(0, 0);
+  const wg = new THREE.ShapeGeometry(ws, 10);
+  for (const side of [1, -1]) {
+    const w = add(wg, wing, side * 10, 86, -12, 0, side > 0 ? -0.5 : Math.PI + 0.5, 0);
+    w.scale.setScalar(0.95);
+  }
+
+  // Head: a long goat's face leaning forward, with a beard, ears and glowing eyes.
+  const head = new THREE.Group();
+  head.position.set(0, 110, 6);
+  // Bigger than life and tipped up a little, so the face reads from the high camera.
+  head.scale.setScalar(1.3);
+  head.rotation.x = -0.35;
+  g.add(head);
+  const hadd = (geo: THREE.BufferGeometry, mat: THREE.Material, x: number, y: number, z: number, rx = 0, ry = 0, rz = 0) => {
+    const m = new THREE.Mesh(geo, mat);
+    m.position.set(x, y, z);
+    m.rotation.set(rx, ry, rz);
+    head.add(m);
+    return m;
+  };
+  hadd(new THREE.SphereGeometry(11, 14, 10), stone, 0, 4, 0).scale.set(1, 1.1, 1);
+  hadd(new THREE.CylinderGeometry(4.5, 8, 20, 10), stone, 0, -6, 7, 1.15);
+  hadd(new THREE.ConeGeometry(4, 13, 8), stone, 0, -15, 9, Math.PI);
+  for (const side of [1, -1]) {
+    hadd(new THREE.ConeGeometry(3, 13, 6), stone, side * 12, 5, 0, 0, 0, side * 1.9).scale.set(1, 1, 0.45);
+    hadd(new THREE.SphereGeometry(1.8, 8, 6), glow, side * 4.5, 2, 10);
+    // Horns: a tapering tube curling up, out and back.
+    const curve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(side * 5, 11, 1),
+      new THREE.Vector3(side * 11, 22, -2),
+      new THREE.Vector3(side * 20, 28, -8),
+      new THREE.Vector3(side * 26, 24, -14),
+    ]);
+    const tube = new THREE.TubeGeometry(curve, 16, 3, 8);
+    // Taper: shrink each ring towards the tip.
+    const pos = tube.attributes.position as THREE.BufferAttribute;
+    const segs = 16, radial = 9;
+    for (let i = 0; i <= segs; i++) {
+      const t = i / segs;
+      const c = curve.getPointAt(t);
+      const k = 1 - 0.8 * t;
+      for (let j = 0; j < radial; j++) {
+        const vi = i * radial + j;
+        pos.setXYZ(vi, c.x + (pos.getX(vi) - c.x) * k, c.y + (pos.getY(vi) - c.y) * k, c.z + (pos.getZ(vi) - c.z) * k);
+      }
+    }
+    tube.computeVertexNormals();
+    hadd(tube, horn, 0, 0, 0);
+  }
+  // The star on the brow, and the flame between the horns.
+  const st = new THREE.Shape();
+  for (let i = 0; i < 10; i++) {
+    const a = Math.PI / 2 + (i * Math.PI) / 5;
+    const r = i % 2 ? 1.9 : 4.6;
+    if (i) st.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+    else st.moveTo(Math.cos(a) * r, Math.sin(a) * r);
+  }
+  hadd(new THREE.ShapeGeometry(st), glow, 0, 9, 10.6, -0.25);
+  hadd(new THREE.ConeGeometry(3.2, 11, 10), new THREE.MeshBasicMaterial({ color: 0xffa040 }), 0, 22, -1);
+  hadd(new THREE.SphereGeometry(3.2, 10, 8), new THREE.MeshBasicMaterial({ color: 0xffc46b }), 0, 17, -1);
+
+  g.position.set(o.x ?? W / 2, o.h ?? 0, o.y ?? 60);
+  g.rotation.y = deg(o.r, 0);
+  g.scale.setScalar(o.s ?? 1);
+  return g;
 }

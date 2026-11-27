@@ -1,0 +1,159 @@
+{
+  "schema": "1.3",
+  "id": "horned_star",
+  "version": "1.0.0",
+  "difficulty": "medium",
+  "names": "fictional",
+  "fictional": true,
+  "forbiddenRite": true,
+  "contentNote": "Fictional. Dark themes: occult ritual, secrecy, coercion",
+  "theme": {
+    "primary": "#4a2a4e",
+    "accent": "#d9a441",
+    "floor": "#1c1618"
+  },
+  "outfit": {
+    "garment": "robe",
+    "colors": [
+      "#1e1a22",
+      "#24202a",
+      "#2c2430",
+      "#1a1618",
+      "#3a1f3d",
+      "#5a1e24"
+    ],
+    "hair": [
+      "short",
+      "long",
+      "short",
+      "bun"
+    ],
+    "beard": 0.3,
+    "beads": "#d9a441",
+    "feet": "#121012"
+  },
+  "stats": {
+    "illumination": {
+      "min": 0,
+      "max": 100,
+      "initial": 0,
+      "widget": "bar",
+      "label": "stat.illumination"
+    }
+  },
+  "initial": {
+    "followers": 15,
+    "funds": 5000,
+    "loyalty": 65
+  },
+  "goal": {
+    "progress": "cult.illumination / 100",
+    "label": "goal.illumination"
+  },
+  "guard": "cult.loyalty >= 50",
+  "sharedActions": [],
+  "actions": [
+    {
+      "id": "send_invitation",
+      "slot": "recruit",
+      "game": "flick",
+      "skin": {
+        "target": "🎩",
+        "item": "✉️"
+      },
+      "energy": 1,
+      "effects": [
+        {
+          "stat": "followers",
+          "add": 4,
+          "scale": "yield"
+        },
+        {
+          "stat": "scrutiny",
+          "add": 0.6
+        },
+        {
+          "stat": "paranoia",
+          "add": -1
+        }
+      ]
+    },
+    {
+      "id": "read_the_stars",
+      "slot": "work",
+      "game": "timing",
+      "skin": {
+        "zone": "🔮"
+      },
+      "energy": 2,
+      "cooldownSec": 60,
+      "effects": [
+        {
+          "stat": "funds",
+          "add": "250 + cult.followers * 3",
+          "scale": "yield"
+        },
+        {
+          "stat": "illumination",
+          "add": 0.09,
+          "scale": "yield"
+        },
+        {
+          "stat": "scrutiny",
+          "add": 0.3
+        }
+      ]
+    },
+    {
+      "id": "kneel_to_idol",
+      "slot": "devote",
+      "game": "beat",
+      "skin": {
+        "zone": "⭐"
+      },
+      "energy": 1,
+      "effects": [
+        {
+          "stat": "illumination",
+          "add": 0.25,
+          "scale": "yield"
+        },
+        {
+          "stat": "loyalty",
+          "add": 2.5
+        },
+        {
+          "stat": "paranoia",
+          "add": 1.2
+        },
+        {
+          "stat": "scrutiny",
+          "add": -1.5
+        }
+      ]
+    }
+  ],
+  "tick": [
+    {
+      "stat": "funds",
+      "add": "-cult.followers * 0.5"
+    },
+    {
+      "stat": "illumination",
+      "add": "cult.funds <= 0 ? -0.05 : 0"
+    }
+  ],
+  "falls": [
+    {
+      "when": "cult.scrutiny >= 100",
+      "reason": "unmasked",
+      "text": "codex.fall.unmasked"
+    }
+  ],
+  "animations": {
+    "send_invitation": "talk",
+    "read_the_stars": "interact",
+    "kneel_to_idol": "raise_hands",
+    "refuse_rite": "no"
+  }
+}

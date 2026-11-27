@@ -1,0 +1,132 @@
+{
+  "about": "An invented lodge under an old city: a long candlelit hall of dark stone, rows of black cushions facing a winged, horned stone idol with a star on its brow. Fictional.",
+  "sky": "#120e14",
+  "ground": "#1a1519",
+  "floor": {
+    "color": "#2e2629"
+  },
+  "light": {
+    "sky": "#e8c9ff",
+    "ground": "#2a1c24",
+    "sun": "#ffc07a",
+    "intensity": 1.35
+  },
+  "walls": {
+    "style": "plain",
+    "color": "#3a3238",
+    "height": 190
+  },
+  "pillars": {
+    "color": "#463c44",
+    "height": 190,
+    "every": 150
+  },
+  "banner": false,
+  "portrait": {
+    "x": 230,
+    "size": 64,
+    "frame": "#6a4a22"
+  },
+  "colors": {
+    "wood": "#3a2a22",
+    "woodDark": "#241a16"
+  },
+  "dais": {
+    "color": "#3a2a3e",
+    "y": 135
+  },
+  "idol": {
+    "y": 134,
+    "h": 14,
+    "s": 0.72,
+    "stone": "#5a5260",
+    "horn": "#dcc9a0",
+    "wing": "#5e3a6a",
+    "glow": "#f2c14e"
+  },
+  "seat": {
+    "m": "pillow",
+    "s": 2.4,
+    "height": 4,
+    "c": {
+      "carpet": "#5a1e24"
+    }
+  },
+  "props": [
+    {
+      "m": "rugRectangle",
+      "x": 480,
+      "y": 420,
+      "r": 90,
+      "s": 1.6,
+      "c": {
+        "carpet": "#5a1e24"
+      }
+    },
+    {
+      "m": "lampRoundFloor",
+      "x": 330,
+      "y": 190,
+      "s": 1.3,
+      "c": {
+        "lamp": "#f2c14e"
+      }
+    },
+    {
+      "m": "lampRoundFloor",
+      "x": 630,
+      "y": 190,
+      "s": 1.3,
+      "c": {
+        "lamp": "#f2c14e"
+      }
+    },
+    {
+      "m": "bookcaseClosedWide",
+      "x": 760,
+      "y": 20,
+      "s": 1.4
+    },
+    {
+      "m": "bookcaseOpen",
+      "x": 860,
+      "y": 20,
+      "s": 1.4
+    },
+    {
+      "m": "tableCloth",
+      "x": 80,
+      "y": 520,
+      "r": 90,
+      "s": 1.2,
+      "c": {
+        "carpet": "#3a1f3d"
+      }
+    },
+    {
+      "m": "books",
+      "x": 80,
+      "y": 520,
+      "h": 30,
+      "s": 1.2
+    },
+    {
+      "m": "lampRoundTable",
+      "x": 880,
+      "y": 520,
+      "s": 1.4
+    },
+    {
+      "m": "sideTable",
+      "x": 880,
+      "y": 520,
+      "s": 1.2
+    },
+    {
+      "m": "coatRackStanding",
+      "x": 60,
+      "y": 610,
+      "s": 1.3
+    }
+  ]
+}
