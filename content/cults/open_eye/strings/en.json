@@ -1,0 +1,16 @@
+{
+  "name": "The Society of the Open Eye",
+  "tagline": "A white marble hall behind a bank's locked doors, and a great eye that never closes.",
+  "leader": "The Keeper of Records (fictional)",
+  "era": "An invented capital, in no particular year",
+  "summary": "Raise the society's secrets to 100 while keeping loyalty at 50 or more. Refuse the inner circle if it demands a forbidden rite.",
+  "stat.secrets": "Secrets",
+  "goal.secrets": "Secrets 100",
+  "action.tap_a_shoulder": "Tap a shoulder",
+  "action.tap_a_shoulder.desc": "Hand a brass key to someone useful. Adds followers and a little scrutiny; new faces ease paranoia.",
+  "action.trade_a_secret": "Trade a secret",
+  "action.trade_a_secret.desc": "Sell a whisper from the archive to a powerful client. Adds funds and a few secrets.",
+  "action.gaze_into_the_eye": "Gaze into the Eye",
+  "action.gaze_into_the_eye.desc": "Stand before the Eye and confess what you have seen. Raises secrets and loyalty and hides the society from outsiders, but feeds the zealots' paranoia.",
+  "codex.fall.exposed": "A clerk walked out with the membership ledger, and every name was in the morning papers. The society dissolved within the week. (Game ending.)"
+}
